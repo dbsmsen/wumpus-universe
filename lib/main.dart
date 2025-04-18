@@ -12,7 +12,7 @@ class WumpusWorldApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Wumpus World',
+      title: 'Wumpus Universe',
       theme: ThemeData(primarySwatch: Colors.brown),
       home: const GameScreen(),
     );
