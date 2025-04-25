@@ -1,10 +1,8 @@
-// screens/game_screen.dart
-import 'dart:async';
-import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:audioplayers/audioplayers.dart';
+import 'dart:math';
 import '../models/agent.dart';
 import '../models/cell.dart';
+import '../models/direction.dart' as dir;
 
 class GameScreen extends StatefulWidget {
   const GameScreen({super.key});
@@ -14,141 +12,84 @@ class GameScreen extends StatefulWidget {
 }
 
 class _GameScreenState extends State<GameScreen> {
-  final int gridSize = 4;
+  late Agent agent;
   late List<List<Cell>> grid;
-  Agent agent = Agent();
-  Random random = Random();
-  bool wumpusAlive = true;
-  final player = AudioPlayer();
-  String gameMessage = "Game started. Find the gold and return!";
+  bool _autoMoveEnabled = true;
+  bool _darkMode = false;
+  final _random = Random();
+  int moveCount = 0; // Track moves for scoring
+  bool _gameOver = false;
 
   @override
   void initState() {
     super.initState();
-    _initializeGrid();
+    agent = Agent();
+    grid = generateGrid();
+    _initializeGame();
   }
 
-  void _initializeGrid() {
-    grid = List.generate(gridSize, (y) {
-      return List.generate(gridSize, (x) => Cell(x, y));
+  List<List<Cell>> generateGrid() {
+    return List.generate(4, (y) {
+      return List.generate(4, (x) {
+        return Cell(x: x, y: y);
+      });
     });
+  }
 
-    _placeRandomItem((cell) => cell.hasWumpus = true);
-    _placeRandomItem((cell) => cell.hasGold = true);
+  void _initializeGame() {
+    final corners = [[0, 0], [0, 3], [3, 0], [3, 3]];
+    final start = corners[_random.nextInt(corners.length)];
+    agent.x = start[0];
+    agent.y = start[1];
+    agent.isAlive = true;
+    agent.hasGold = false;
+    agent.hasWon = false;
+    agent.score = 0;
 
-    for (var row in grid) {
-      for (var cell in row) {
-        if (!(cell.x == 0 && cell.y == 0) && random.nextDouble() < 0.2) {
-          cell.hasPit = true;
-        }
-      }
+    int goldX = _random.nextInt(4);
+    int goldY = _random.nextInt(4);
+    while (goldX == agent.x && goldY == agent.y) {
+      goldX = _random.nextInt(4);
+      goldY = _random.nextInt(4);
     }
+    grid[goldY][goldX].hasGold = true;
+    grid[goldY][goldX].cellType = CellType.gold; // Set CellType to gold
 
-    _addPercepts();
-    grid[0][0].safe = true;
-    grid[0][0].visited = true;
+    _placeRandomObstacles();
   }
 
-  void _placeRandomItem(Function(Cell) assign) {
-    int x, y;
-    do {
-      x = random.nextInt(4);
-      y = random.nextInt(4);
-    } while (x == 0 && y == 0);
-    assign(grid[y][x]);
+  void _placeRandomObstacles() {
+    _placeObstacle(CellType.pit);
+    _placeObstacle(CellType.wumpus);
   }
 
-  void _addPercepts() {
-    for (var row in grid) {
-      for (var cell in row) {
-        if (cell.hasWumpus) _addAdjacent(cell.x, cell.y, (adj) => adj.stench = true);
-        if (cell.hasPit) _addAdjacent(cell.x, cell.y, (adj) => adj.breeze = true);
-        if (cell.hasGold) cell.glitter = true;
-      }
+  void _placeObstacle(CellType type) {
+    int x = _random.nextInt(4);
+    int y = _random.nextInt(4);
+    while (grid[y][x].hasGold || grid[y][x].hasPit || grid[y][x].hasWumpus || (x == agent.x && y == agent.y)) {
+      x = _random.nextInt(4);
+      y = _random.nextInt(4);
     }
-  }
-
-  void _addAdjacent(int x, int y, Function(Cell) update) {
-    final offsets = [[0, -1], [0, 1], [-1, 0], [1, 0]];
-    for (var offset in offsets) {
-      int nx = x + offset[0];
-      int ny = y + offset[1];
-      if (nx >= 0 && ny >= 0 && nx < 4 && ny < 4) {
-        update(grid[ny][nx]);
-      }
+    if (type == CellType.pit) {
+      grid[y][x].hasPit = true;
+      grid[y][x].cellType = CellType.pit; // Set CellType to pit
+    } else if (type == CellType.wumpus) {
+      grid[y][x].hasWumpus = true;
+      grid[y][x].cellType = CellType.wumpus; // Set CellType to wumpus
     }
   }
 
-  Future<void> _move(Direction direction) async {
-    setState(() => agent.setDirection(direction));
+  Future<void> _move(dir.Direction direction) async {
+    if (!agent.isAlive || agent.hasWon) return;
+    setState(() {
+      agent.direction = direction;
+      moveCount++;
+    });
     await Future.delayed(const Duration(milliseconds: 200));
     agent.move(direction);
     await _handleCurrentCell();
     setState(() {});
-    if (agent.isAlive && !agent.hasWon) _autoMove();
-  }
-
-  Future<void> _handleCurrentCell() async {
-    Cell current = grid[agent.y][agent.x];
-    current.visited = true;
-    current.safe = true;
-
-    if (current.hasPit || (current.hasWumpus && wumpusAlive)) {
-      agent.isAlive = false;
-      gameMessage = "You died! Game Over.";
-      await player.play(AssetSource('sounds/death.mp3'));
-    }
-
-    if (current.hasGold) {
-      agent.hasGold = true;
-      current.hasGold = false;
-      current.glitter = false;
-      gameMessage = "You found the gold! Return to start.";
-      await player.play(AssetSource('sounds/gold.mp3'));
-    }
-
-    if (agent.hasGold && agent.x == 0 && agent.y == 0) {
-      agent.hasWon = true;
-      gameMessage = "You escaped with the gold! You win!";
-    }
-  }
-
-  Future<void> _shootArrow() async {
-    if (!agent.hasArrow) return;
-    agent.hasArrow = false;
-
-    int x = agent.x, y = agent.y;
-    bool hit = false;
-    switch (agent.direction) {
-      case Direction.up:
-        for (int i = y - 1; i >= 0; i--) if (grid[i][x].hasWumpus) { hit = true; break; }
-        break;
-      case Direction.down:
-        for (int i = y + 1; i < 4; i++) if (grid[i][x].hasWumpus) { hit = true; break; }
-        break;
-      case Direction.left:
-        for (int i = x - 1; i >= 0; i--) if (grid[y][i].hasWumpus) { hit = true; break; }
-        break;
-      case Direction.right:
-        for (int i = x + 1; i < 4; i++) if (grid[y][i].hasWumpus) { hit = true; break; }
-        break;
-    }
-    if (hit) {
-      wumpusAlive = false;
-      gameMessage = "You killed the Wumpus!";
-      await player.play(AssetSource('sounds/scream.mp3'));
-    } else {
-      gameMessage = "Missed! The Wumpus lives...";
-    }
-    setState(() {});
-  }
-
-  void _resetGame() {
-    agent.reset();
-    wumpusAlive = true;
-    gameMessage = "Game reset. Try again!";
-    _initializeGrid();
-    setState(() {});
+    if (_autoMoveEnabled && agent.isAlive && !agent.hasWon) _autoMove();
   }
 
   Future<void> _autoMove() async {
@@ -159,8 +100,7 @@ class _GameScreenState extends State<GameScreen> {
 
     while (queue.isNotEmpty) {
       final current = queue.removeAt(0);
-      final x = current[0];
-      final y = current[1];
+      final x = current[0], y = current[1];
       visited[y][x] = true;
 
       for (var next in agent.neighbors(x, y)) {
@@ -174,34 +114,79 @@ class _GameScreenState extends State<GameScreen> {
     }
   }
 
-  Direction _dirTo(int x, int y) {
-    if (y < agent.y) return Direction.up;
-    if (y > agent.y) return Direction.down;
-    if (x < agent.x) return Direction.left;
-    return Direction.right;
+  dir.Direction _dirTo(int x, int y) {
+    if (x > agent.x) return dir.Direction.right;
+    if (x < agent.x) return dir.Direction.left;
+    if (y > agent.y) return dir.Direction.down;
+    return dir.Direction.up;
   }
 
-  Widget _buildCell(Cell cell) {
-    bool isAgent = agent.x == cell.x && agent.y == cell.y;
-    Color bgColor = cell.visited ? Colors.white : Colors.grey[300]!;
-    if (!agent.isAlive && isAgent) bgColor = Colors.red;
+  Future<void> _handleCurrentCell() async {
+    final cell = grid[agent.y][agent.x];
+    if (cell.hasPit || cell.hasWumpus) {
+      agent.isAlive = false;
+      _gameOver = true;
+    } else if (cell.hasGold) {
+      agent.hasGold = true;
+      agent.score += 1000;
+    }
+    if (agent.hasGold && agent.x == 0 && agent.y == 0) {
+      agent.hasWon = true;
+      agent.score += 500;
+      _gameOver = true;
+    }
+    setState(() {});
+  }
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
+  Widget _buildCell(int x, int y) {
+    final cell = grid[y][x];
+    final isAgentHere = agent.x == x && agent.y == y;
+    final List<Widget> content = [];
+
+    if (_isNeighbor(x, y)) {
+      if (cell.breeze) content.add(Image.asset('assets/images/breeze.png', width: 24));
+      if (cell.stench) content.add(Image.asset('assets/images/stench.png', width: 24));
+      if (cell.glitter) content.add(Image.asset('assets/images/glitter.png', width: 24));
+      if (cell.hasPit) content.add(Image.asset('assets/images/pit.png', width: 24));
+      if (cell.hasWumpus && !cell.isWumpusDead) content.add(Image.asset('assets/images/wumpus.png', width: 24));
+      if (cell.isWumpusDead) content.add(Image.asset('assets/images/wumpus_dead.png', width: 24));
+      if (cell.hasGold) content.add(Image.asset('assets/images/gold.png', width: 24));
+      if (isAgentHere) content.add(Image.asset('assets/images/agent.png', width: 40)); // Increased size
+    }
+
+    return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.black),
-        color: bgColor,
+        color: Colors.grey[200],
+        border: Border.all(color: Colors.black54),
       ),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          if (isAgent) const Icon(Icons.person, color: Colors.blue),
-          if (cell.glitter) const Icon(Icons.star, color: Colors.amber),
-          if (cell.breeze && cell.visited) const Icon(Icons.air, color: Colors.cyan),
-          if (cell.stench && cell.visited) const Icon(Icons.warning, color: Colors.green),
-        ],
+      margin: const EdgeInsets.all(2),
+      child: Center(
+        child: Wrap(
+          alignment: WrapAlignment.center,
+          spacing: 2,
+          runSpacing: 2,
+          children: content,
+        ),
       ),
     );
+  }
+
+  bool _isNeighbor(int x, int y) {
+    return (x == agent.x && (y == agent.y + 1 || y == agent.y - 1)) ||
+        (y == agent.y && (x == agent.x + 1 || x == agent.x - 1));
+  }
+
+  IconData _directionIcon(dir.Direction d) {
+    switch (d) {
+      case dir.Direction.up:
+        return Icons.arrow_upward;
+      case dir.Direction.down:
+        return Icons.arrow_downward;
+      case dir.Direction.left:
+        return Icons.arrow_back;
+      case dir.Direction.right:
+        return Icons.arrow_forward;
+    }
   }
 
   @override
@@ -212,41 +197,64 @@ class _GameScreenState extends State<GameScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.all(8.0),
-            child: Text(gameMessage, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+            child: Text(
+              'Points: ${agent.score}\nMoves: $moveCount',
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
           ),
           Expanded(
             child: GridView.builder(
-              itemCount: 16,
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 4),
-              itemBuilder: (context, index) {
-                int x = index % 4;
-                int y = index ~/ 4;
-                return _buildCell(grid[y][x]);
+              itemCount: 16,
+              itemBuilder: (_, index) {
+                final x = index % 4;
+                final y = index ~/ 4;
+                return _buildCell(x, y);
               },
             ),
           ),
-          if (!agent.isAlive)
-            const Text("You Died!", style: TextStyle(color: Colors.red, fontSize: 24)),
           if (agent.hasWon)
-            const Text("You Escaped with the Gold!", style: TextStyle(color: Colors.green, fontSize: 24)),
-          Wrap(
-            spacing: 10,
-            children: [
-              for (var dir in Direction.values)
-                ElevatedButton(
-                  onPressed: agent.isAlive && !agent.hasWon ? () => _move(dir) : null,
-                  child: Text(dir.name.toUpperCase()),
-                ),
-              ElevatedButton(
-                onPressed: agent.isAlive && agent.hasArrow ? _shootArrow : null,
-                child: const Text("SHOOT"),
+            const Padding(
+              padding: EdgeInsets.all(8.0),
+              child: Text(
+                '🎉 You found the gold and returned safely! 🎉',
+                style: TextStyle(fontSize: 16, color: Colors.green, fontWeight: FontWeight.bold),
               ),
-              ElevatedButton(
-                onPressed: _resetGame,
-                child: const Text("RESTART"),
-              )
-            ],
-          )
+            )
+          else if (!agent.isAlive)
+            const Padding(
+              padding: EdgeInsets.all(8.0),
+              child: Text(
+                '💀 Game Over. You died. 💀',
+                style: TextStyle(fontSize: 16, color: Colors.red, fontWeight: FontWeight.bold),
+              ),
+            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: dir.Direction.values.map((d) {
+              return IconButton(
+                icon: Icon(_directionIcon(d), size: 32),
+                onPressed: () {
+                  setState(() {
+                    _autoMoveEnabled = false;
+                  });
+                  _move(d);
+                },
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 8),
+          if (_gameOver)
+            ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  _initializeGame();
+                  moveCount = 0;
+                  _gameOver = false;
+                });
+              },
+              child: const Text("Restart Game"),
+            ),
         ],
       ),
     );

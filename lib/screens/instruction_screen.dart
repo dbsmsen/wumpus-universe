@@ -11,29 +11,54 @@ class InstructionScreen extends StatelessWidget {
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: ListView(
-                children: const [
-                  InstructionItem(
-                    imagePath: 'assets/images/player.png',
-                    text: 'You are the agent. Move through the grid to find the gold.',
-                  ),
-                  InstructionItem(
-                    imagePath: 'assets/images/pit.png',
-                    text: 'Avoid pits! Falling into one ends the game.',
-                  ),
-                  InstructionItem(
-                    imagePath: 'assets/images/wumpus.png',
-                    text: 'Beware of the Wumpus. It kills you if you enter its cell.',
-                  ),
-                  InstructionItem(
-                    imagePath: 'assets/images/gold.png',
-                    text: 'Find the gold and return to the start to win!',
-                  ),
-                ],
-              ),
+            const Text(
+              'Welcome to the Wumpus World!',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
+            const SizedBox(height: 20),
+            const Text(
+              'The Wumpus World is a simple world example that demonstrates knowledge-based agents and knowledge representation. Your goal is to navigate the cave, find the gold, and return to safety without falling into a pit or getting eaten by the Wumpus.',
+              style: TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Here\'s what you need to know:',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 10),
+            InstructionItem(
+              imagePath: 'assets/images/agent.png',
+              text: 'You are the agent. Move through the grid to find the gold.',
+            ),
+            InstructionItem(
+              imagePath: 'assets/images/pit.png',
+              text: 'Avoid pits! Falling into one ends the game.',
+            ),
+            InstructionItem(
+              imagePath: 'assets/images/wumpus.png',
+              text: 'Beware of the Wumpus. It kills you if you enter its room.',
+            ),
+            InstructionItem(
+              imagePath: 'assets/images/gold.png',
+              text: 'Find the gold and return to the start to win!',
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Game Mechanics:',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              '• The cave is a 4x4 grid with 16 rooms connected by passageways.\n'
+                  '• The Wumpus can be killed by the agent if the agent faces it and shoots an arrow.\n'
+                  '• Each room may contain a pit, a Wumpus, or gold.\n'
+                  '• The agent senses: stench (near the Wumpus), breeze (near a pit), glitter (when gold is present), and bump (if the agent walks into a wall).\n'
+                  '• The agent earns +1000 points for finding the gold and exiting the cave. The agent loses -1000 points for falling into a pit or being eaten by the Wumpus.\n',
+              style: TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () => Navigator.push(
                 context,
@@ -57,12 +82,18 @@ class InstructionItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
+      padding: const EdgeInsets.symmetric(vertical: 12),
       child: Row(
         children: [
           Image.asset(imagePath, width: 50, height: 50),
           const SizedBox(width: 12),
-          Expanded(child: Text(text, style: const TextStyle(fontSize: 16)))
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(fontSize: 16),
+              textAlign: TextAlign.start,
+            ),
+          ),
         ],
       ),
     );
