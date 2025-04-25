@@ -12,6 +12,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Wumpus World',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(primarySwatch: Colors.teal),
       home: const InstructionScreen(),
     );
