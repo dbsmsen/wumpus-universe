@@ -1,4 +1,3 @@
-// models/agent.dart
 enum Direction { up, down, left, right }
 
 class Agent {
@@ -28,6 +27,10 @@ class Agent {
     }
   }
 
+  void setDirection(Direction dir) {
+    direction = dir;
+  }
+
   void reset() {
     x = 0;
     y = 0;
@@ -40,10 +43,10 @@ class Agent {
 
   List<List<int>> neighbors(int x, int y) {
     return [
-      if (x > 0) [x - 1, y],
-      if (x < 3) [x + 1, y],
       if (y > 0) [x, y - 1],
       if (y < 3) [x, y + 1],
+      if (x > 0) [x - 1, y],
+      if (x < 3) [x + 1, y],
     ];
   }
 }

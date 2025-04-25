@@ -1,20 +1,19 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:wumpus_universe/screens/game_screen.dart';
+import 'screens/instruction_screen.dart';
 
 void main() {
-  runApp(const WumpusWorldApp());
+  runApp(const MyApp());
 }
 
-class WumpusWorldApp extends StatelessWidget {
-  const WumpusWorldApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Wumpus Universe',
-      theme: ThemeData(primarySwatch: Colors.brown),
-      home: const GameScreen(),
+      title: 'Wumpus World',
+      theme: ThemeData(primarySwatch: Colors.teal),
+      home: const InstructionScreen(),
     );
   }
 }

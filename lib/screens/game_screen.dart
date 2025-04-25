@@ -1,3 +1,4 @@
+// screens/game_screen.dart
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
@@ -19,6 +20,7 @@ class _GameScreenState extends State<GameScreen> {
   Random random = Random();
   bool wumpusAlive = true;
   final player = AudioPlayer();
+  String gameMessage = "Game started. Find the gold and return!";
 
   @override
   void initState() {
@@ -33,6 +35,7 @@ class _GameScreenState extends State<GameScreen> {
 
     _placeRandomItem((cell) => cell.hasWumpus = true);
     _placeRandomItem((cell) => cell.hasGold = true);
+
     for (var row in grid) {
       for (var cell in row) {
         if (!(cell.x == 0 && cell.y == 0) && random.nextDouble() < 0.2) {
@@ -77,6 +80,8 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   Future<void> _move(Direction direction) async {
+    setState(() => agent.setDirection(direction));
+    await Future.delayed(const Duration(milliseconds: 200));
     agent.move(direction);
     await _handleCurrentCell();
     setState(() {});
@@ -90,6 +95,7 @@ class _GameScreenState extends State<GameScreen> {
 
     if (current.hasPit || (current.hasWumpus && wumpusAlive)) {
       agent.isAlive = false;
+      gameMessage = "You died! Game Over.";
       await player.play(AssetSource('sounds/death.mp3'));
     }
 
@@ -97,11 +103,13 @@ class _GameScreenState extends State<GameScreen> {
       agent.hasGold = true;
       current.hasGold = false;
       current.glitter = false;
+      gameMessage = "You found the gold! Return to start.";
       await player.play(AssetSource('sounds/gold.mp3'));
     }
 
     if (agent.hasGold && agent.x == 0 && agent.y == 0) {
       agent.hasWon = true;
+      gameMessage = "You escaped with the gold! You win!";
     }
   }
 
@@ -127,7 +135,10 @@ class _GameScreenState extends State<GameScreen> {
     }
     if (hit) {
       wumpusAlive = false;
+      gameMessage = "You killed the Wumpus!";
       await player.play(AssetSource('sounds/scream.mp3'));
+    } else {
+      gameMessage = "Missed! The Wumpus lives...";
     }
     setState(() {});
   }
@@ -135,17 +146,30 @@ class _GameScreenState extends State<GameScreen> {
   void _resetGame() {
     agent.reset();
     wumpusAlive = true;
+    gameMessage = "Game reset. Try again!";
     _initializeGrid();
     setState(() {});
   }
 
-  void _autoMove() async {
+  Future<void> _autoMove() async {
     await Future.delayed(const Duration(milliseconds: 600));
-    for (var next in agent.neighbors(agent.x, agent.y)) {
-      final cell = grid[next[1]][next[0]];
-      if (!cell.visited && !cell.stench && !cell.breeze) {
-        await _move(_dirTo(next[0], next[1]));
-        break;
+    final queue = <List<int>>[];
+    final visited = List.generate(4, (_) => List.filled(4, false));
+    queue.add([agent.x, agent.y]);
+
+    while (queue.isNotEmpty) {
+      final current = queue.removeAt(0);
+      final x = current[0];
+      final y = current[1];
+      visited[y][x] = true;
+
+      for (var next in agent.neighbors(x, y)) {
+        final nx = next[0], ny = next[1];
+        final cell = grid[ny][nx];
+        if (!visited[ny][nx] && !cell.stench && !cell.breeze && !cell.hasPit && !cell.hasWumpus) {
+          await _move(_dirTo(nx, ny));
+          return;
+        }
       }
     }
   }
@@ -173,10 +197,8 @@ class _GameScreenState extends State<GameScreen> {
         children: [
           if (isAgent) const Icon(Icons.person, color: Colors.blue),
           if (cell.glitter) const Icon(Icons.star, color: Colors.amber),
-          if (cell.breeze && cell.visited)
-            const Icon(Icons.air, color: Colors.cyan),
-          if (cell.stench && cell.visited)
-            const Icon(Icons.warning, color: Colors.green),
+          if (cell.breeze && cell.visited) const Icon(Icons.air, color: Colors.cyan),
+          if (cell.stench && cell.visited) const Icon(Icons.warning, color: Colors.green),
         ],
       ),
     );
@@ -188,11 +210,14 @@ class _GameScreenState extends State<GameScreen> {
       appBar: AppBar(title: const Text('Wumpus World')),
       body: Column(
         children: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Text(gameMessage, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+          ),
           Expanded(
             child: GridView.builder(
               itemCount: 16,
-              gridDelegate:
-              const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 4),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 4),
               itemBuilder: (context, index) {
                 int x = index % 4;
                 int y = index ~/ 4;
