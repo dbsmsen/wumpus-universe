@@ -28,7 +28,7 @@ class _InitialOnboardingScreenState extends State<InitialOnboardingScreen>
         const Color(0xFF5C6BC0), // Light Indigo
       ],
       'rules': [
-        'Navigate through a 4x4 grid cave system',
+        'Navigate through a 4x6 grid cave system',
         'Find the hidden gold and return safely',
         'Use your senses to detect dangers',
         'Score points for successful exploration',
