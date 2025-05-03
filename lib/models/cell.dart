@@ -16,7 +16,8 @@ class Cell {
   bool glitter = false;
   bool safe = false;
   bool isWumpusDead = false;
-  CellType cellType = CellType.empty;  // Add CellType property
+  bool isWall = false;  // New property for wall cells
+  CellType cellType = CellType.empty;
 
   Cell({required this.x, required this.y});
 
@@ -25,8 +26,11 @@ class Cell {
     if (hasPit) {
       _setBreezeInNeighbors(grid);
     }
-    if (hasWumpus) {
+    if (hasWumpus && !isWumpusDead) {
       _setStenchInNeighbors(grid);
+    }
+    if (hasGold) {
+      glitter = true;
     }
   }
 
@@ -58,5 +62,20 @@ class Cell {
         }
       }
     }
+  }
+
+  // Check if the cell is safe to move into
+  bool isSafeToMove() {
+    return !hasPit && (!hasWumpus || isWumpusDead) && !isWall;
+  }
+
+  // Get the cell's description based on its properties
+  String getDescription() {
+    List<String> descriptions = [];
+    if (stench) descriptions.add("Stench");
+    if (breeze) descriptions.add("Breeze");
+    if (glitter) descriptions.add("Glitter");
+    if (descriptions.isEmpty) descriptions.add("Empty");
+    return descriptions.join(", ");
   }
 }
