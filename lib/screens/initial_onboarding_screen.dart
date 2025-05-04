@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'game_screen.dart';
+import 'grid_selection_screen.dart';
 
 class InitialOnboardingScreen extends StatefulWidget {
   const InitialOnboardingScreen({super.key});
@@ -194,7 +194,11 @@ class _InitialOnboardingScreenState extends State<InitialOnboardingScreen>
   }
 
   void _startGame() {
-    Navigator.pushReplacementNamed(context, '/game');
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (context) => const GridSelectionScreen(),
+      ),
+    );
   }
 
   @override
@@ -277,42 +281,7 @@ class _InitialOnboardingScreenState extends State<InitialOnboardingScreen>
                                             curve: Curves.easeOutCubic,
                                           )),
                                           child: Text(
-                                            _welcomePages[index]['title']!,
-                                            style: TextStyle(
-                                              fontSize: isLastPage ? 36 : 28,
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.white,
-                                              shadows: const [
-                                                Shadow(
-                                                  color: Colors.black26,
-                                                  offset: Offset(1, 1),
-                                                  blurRadius: 2,
-                                                ),
-                                              ],
-                                            ),
-                                            textAlign: TextAlign.center,
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                  const SizedBox(height: 24),
-                                  AnimatedBuilder(
-                                    animation: _animationController,
-                                    builder: (context, child) {
-                                      return FadeTransition(
-                                        opacity: _fadeAnimation,
-                                        child: SlideTransition(
-                                          position: Tween<Offset>(
-                                            begin: const Offset(0, 0.3),
-                                            end: Offset.zero,
-                                          ).animate(CurvedAnimation(
-                                            parent: _animationController,
-                                            curve: Curves.easeOutCubic,
-                                          )),
-                                          child: Text(
-                                            _welcomePages[index]
-                                            ['description']!,
+                                            _welcomePages[index]['description']!,
                                             style: const TextStyle(
                                               fontSize: 18,
                                               color: Colors.white,

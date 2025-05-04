@@ -5,7 +5,10 @@ import '../models/cell.dart';
 import '../models/direction.dart' as dir;
 
 class GameScreen extends StatefulWidget {
-  const GameScreen({super.key});
+  final int rows;
+  final int columns;
+
+  const GameScreen({super.key, this.rows = 4, this.columns = 4});
 
   @override
   State<GameScreen> createState() => _GameScreenState();
@@ -38,7 +41,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     agent = Agent();
-    grid = generateGrid();
+    grid = generateGrid(rows: widget.rows, columns: widget.columns);
     _initializeGame();
 
     // Initialize main animation controller
@@ -78,50 +81,43 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     _gameOver = false;
     _gameMessage = '';
 
-    // Place gold at a minimum distance from agent
-    int goldX = _random.nextInt(4);
-    int goldY = _random.nextInt(6);
+    // Adjust gold and obstacle placement based on grid size
+    int goldX, goldY;
     int attempts = 0;
-    const maxAttempts = 50; // Prevent infinite loops
+    const maxAttempts = 100; // Increased attempts for larger grids
 
-    while ((!_isFarEnough(goldX, goldY, agent.x, agent.y) ||
-            (goldX == agent.x && goldY == agent.y) ||
-            (goldX == 0 && goldY == 0) ||
-            (goldX == 3 && goldY == 0) ||
-            (goldX == 0 && goldY == 5) ||
-            (goldX == 3 && goldY == 5)) &&
-        attempts < maxAttempts) {
-      goldX = _random.nextInt(4);
-      goldY = _random.nextInt(6);
+    // Calculate the number of obstacles based on grid size
+    int pitCount = (widget.rows * widget.columns ~/ 10).clamp(1, 5);
+    int wumpusCount = 1;
+
+    // Find a suitable position for gold
+    do {
+      goldX = _random.nextInt(widget.columns);
+      goldY = _random.nextInt(widget.rows);
       attempts++;
-    }
+    } while (
+      (!_isFarEnough(goldX, goldY, agent.x, agent.y) ||
+       (goldX == agent.x && goldY == agent.y) ||
+       (goldX == 0 && goldY == 0)) &&
+      attempts < maxAttempts
+    );
 
-    // If we couldn't find a suitable position after max attempts,
-    // place it at the farthest corner from the agent
+    // If we couldn't find a suitable position, place at a random valid location
     if (attempts >= maxAttempts) {
-      // Find the corner farthest from the agent
-      List<Map<String, int>> corners = [
-        {'x': 0, 'y': 0},
-        {'x': 3, 'y': 0},
-        {'x': 0, 'y': 5},
-        {'x': 3, 'y': 5},
-      ];
-
-      Map<String, int> farthestCorner = corners.reduce((a, b) {
-        int distA = (a['x']! - agent.x).abs() + (a['y']! - agent.y).abs();
-        int distB = (b['x']! - agent.x).abs() + (b['y']! - agent.y).abs();
-        return distA > distB ? a : b;
-      });
-
-      goldX = farthestCorner['x']!;
-      goldY = farthestCorner['y']!;
+      goldX = _random.nextInt(widget.columns);
+      goldY = _random.nextInt(widget.rows);
     }
 
     grid[goldY][goldX].hasGold = true;
     grid[goldY][goldX].cellType = CellType.gold;
 
-    // Place hazards
-    _placeRandomObstacles();
+    // Place hazards with adjusted count
+    for (int i = 0; i < pitCount; i++) {
+      _placeObstacle(CellType.pit);
+    }
+    for (int i = 0; i < wumpusCount; i++) {
+      _placeObstacle(CellType.wumpus);
+    }
 
     // Set up percepts
     for (var row in grid) {
@@ -135,20 +131,20 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     int edge = _random.nextInt(4); // 0: top, 1: right, 2: bottom, 3: left
     switch (edge) {
       case 0: // top edge
-        agent.x = _random.nextInt(4);
+        agent.x = _random.nextInt(widget.columns);
         agent.y = 0;
         break;
       case 1: // right edge
-        agent.x = 3;
-        agent.y = _random.nextInt(6);
+        agent.x = widget.columns - 1;
+        agent.y = _random.nextInt(widget.rows);
         break;
       case 2: // bottom edge
-        agent.x = _random.nextInt(4);
-        agent.y = 5;
+        agent.x = _random.nextInt(widget.columns);
+        agent.y = widget.rows - 1;
         break;
       case 3: // left edge
         agent.x = 0;
-        agent.y = _random.nextInt(6);
+        agent.y = _random.nextInt(widget.rows);
         break;
     }
   }
@@ -321,11 +317,11 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     );
   }
 
-  List<List<Cell>> generateGrid() {
+  List<List<Cell>> generateGrid({int rows = 4, int columns = 4}) {
     List<List<Cell>> newGrid = List.generate(
-      6,
+      rows,
       (y) => List.generate(
-        4,
+        columns,
         (x) => Cell(x: x, y: y),
       ),
     );
@@ -333,38 +329,52 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   }
 
   void _placeRandomObstacles() {
-    // Place 3 pits
-    for (int i = 0; i < 3; i++) {
+    // Calculate the number of obstacles based on grid size
+    int pitCount = (widget.rows * widget.columns ~/ 10).clamp(1, 5);
+    int wumpusCount = 1;
+
+    // Place pits
+    for (int i = 0; i < pitCount; i++) {
       _placeObstacle(CellType.pit);
     }
-    // Place 1 Wumpus
-    _placeObstacle(CellType.wumpus);
+
+    // Place Wumpus
+    for (int i = 0; i < wumpusCount; i++) {
+      _placeObstacle(CellType.wumpus);
+    }
   }
 
   void _placeObstacle(CellType type) {
     int x, y;
-    do {
-      x = _random.nextInt(4);
-      y = _random.nextInt(6);
-    } while ((x == agent.x && y == agent.y) || // Don't place on agent
-        grid[y][x].cellType != CellType.empty || // Don't place on occupied cell
-        (x == 0 && y == 0) || // Don't place in corners
-        (x == 3 && y == 0) ||
-        (x == 0 && y == 5) ||
-        (x == 3 && y == 5));
+    int attempts = 0;
+    const maxAttempts = 100;
 
-    switch (type) {
-      case CellType.pit:
-        grid[y][x].hasPit = true;
-        grid[y][x].cellType = CellType.pit;
+    do {
+      x = _random.nextInt(widget.columns);
+      y = _random.nextInt(widget.rows);
+      attempts++;
+
+      // Avoid placing on agent's position or gold
+      if (x == agent.x && y == agent.y) continue;
+      if (grid[y][x].hasGold) continue;
+
+      // Ensure no duplicate obstacles
+      if (grid[y][x].cellType == CellType.empty) {
+        switch (type) {
+          case CellType.pit:
+            grid[y][x].hasPit = true;
+            grid[y][x].cellType = CellType.pit;
+            break;
+          case CellType.wumpus:
+            grid[y][x].hasWumpus = true;
+            grid[y][x].cellType = CellType.wumpus;
+            break;
+          default:
+            break;
+        }
         break;
-      case CellType.wumpus:
-        grid[y][x].hasWumpus = true;
-        grid[y][x].cellType = CellType.wumpus;
-        break;
-      default:
-        break;
-    }
+      }
+    } while (attempts < maxAttempts);
   }
 
   Widget _buildCell(int x, int y) {
