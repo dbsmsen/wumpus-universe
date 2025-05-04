@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'game_screen.dart';
 
 class InitialOnboardingScreen extends StatefulWidget {
   const InitialOnboardingScreen({super.key});
@@ -20,7 +21,7 @@ class _InitialOnboardingScreenState extends State<InitialOnboardingScreen>
     {
       'title': 'Welcome to Wumpus World!',
       'description':
-          'Navigate through a cave system to find gold while avoiding dangers.',
+      'Navigate through a cave system to find gold while avoiding dangers.',
       'image': 'assets/images/agent.png',
       'gradientColors': [
         const Color(0xFF1A237E), // Deep Indigo
@@ -37,7 +38,7 @@ class _InitialOnboardingScreenState extends State<InitialOnboardingScreen>
     {
       'title': 'Find the Gold',
       'description':
-          'Navigate through the cave to find the hidden gold and return safely.',
+      'Navigate through the cave to find the hidden gold and return safely.',
       'image': 'assets/images/gold.png',
       'gradientColors': [
         const Color(0xFFBF360C), // Deep Orange
@@ -54,7 +55,7 @@ class _InitialOnboardingScreenState extends State<InitialOnboardingScreen>
     {
       'title': 'Beware of Dangers',
       'description':
-          'Watch out for pits and the Wumpus! Use your senses to detect them.',
+      'Watch out for pits and the Wumpus! Use your senses to detect them.',
       'image': 'assets/images/wumpus.png',
       'gradientColors': [
         const Color(0xFF880E4F), // Deep Red
@@ -71,7 +72,7 @@ class _InitialOnboardingScreenState extends State<InitialOnboardingScreen>
     {
       'title': 'Use Your Senses',
       'description':
-          'Feel the breeze near pits, smell the stench near the Wumpus, and see the glitter of gold.',
+      'Feel the breeze near pits, smell the stench near the Wumpus, and see the glitter of gold.',
       'image': 'assets/images/glitter.png',
       'gradientColors': [
         const Color(0xFF006064), // Deep Teal
@@ -88,7 +89,7 @@ class _InitialOnboardingScreenState extends State<InitialOnboardingScreen>
     {
       'title': 'Begin Your Adventure',
       'description':
-          'Are you ready to explore the mysterious cave system and find the hidden gold?',
+      'Are you ready to explore the mysterious cave system and find the hidden gold?',
       'image': 'assets/images/agent.png',
       'gradientColors': [
         const Color(0xFF1A237E), // Deep Indigo
@@ -311,7 +312,7 @@ class _InitialOnboardingScreenState extends State<InitialOnboardingScreen>
                                           )),
                                           child: Text(
                                             _welcomePages[index]
-                                                ['description']!,
+                                            ['description']!,
                                             style: const TextStyle(
                                               fontSize: 18,
                                               color: Colors.white,
@@ -331,12 +332,12 @@ class _InitialOnboardingScreenState extends State<InitialOnboardingScreen>
                                   ),
                                   const SizedBox(height: 32),
                                   ...(_welcomePages[index]['rules']
-                                          as List<String>)
+                                  as List<String>)
                                       .map((rule) => _buildRuleItem(
-                                            rule,
-                                            _welcomePages[index]['rules']
-                                                .indexOf(rule),
-                                          )),
+                                    rule,
+                                    _welcomePages[index]['rules']
+                                        .indexOf(rule),
+                                  )),
                                   const Spacer(flex: 3),
                                 ],
                               ),
@@ -382,7 +383,7 @@ class _InitialOnboardingScreenState extends State<InitialOnboardingScreen>
                                               children: [
                                                 Row(
                                                   mainAxisAlignment:
-                                                      MainAxisAlignment.center,
+                                                  MainAxisAlignment.center,
                                                   children: [
                                                     if (_currentPage > 0)
                                                       TextButton.icon(
@@ -390,9 +391,9 @@ class _InitialOnboardingScreenState extends State<InitialOnboardingScreen>
                                                           _pageController
                                                               .previousPage(
                                                             duration:
-                                                                const Duration(
-                                                                    milliseconds:
-                                                                        500),
+                                                            const Duration(
+                                                                milliseconds:
+                                                                500),
                                                             curve: Curves
                                                                 .easeInOutCubic,
                                                           );
@@ -408,47 +409,47 @@ class _InitialOnboardingScreenState extends State<InitialOnboardingScreen>
                                                             color: Colors.white,
                                                             fontSize: 16,
                                                             fontWeight:
-                                                                FontWeight.w600,
+                                                            FontWeight.w600,
                                                           ),
                                                         ),
                                                       ),
                                                     const SizedBox(width: 20),
                                                     Row(
                                                       mainAxisAlignment:
-                                                          MainAxisAlignment
-                                                              .center,
+                                                      MainAxisAlignment
+                                                          .center,
                                                       children: List.generate(
                                                         _welcomePages.length,
-                                                        (index) =>
+                                                            (index) =>
                                                             AnimatedContainer(
-                                                          duration:
+                                                              duration:
                                                               const Duration(
                                                                   milliseconds:
-                                                                      300),
-                                                          margin:
+                                                                  300),
+                                                              margin:
                                                               const EdgeInsets
                                                                   .symmetric(
                                                                   horizontal:
-                                                                      4),
-                                                          width: _currentPage ==
+                                                                  4),
+                                                              width: _currentPage ==
                                                                   index
-                                                              ? 24
-                                                              : 8,
-                                                          height: 8,
-                                                          decoration:
+                                                                  ? 24
+                                                                  : 8,
+                                                              height: 8,
+                                                              decoration:
                                                               BoxDecoration(
-                                                            color: _currentPage ==
+                                                                color: _currentPage ==
                                                                     index
-                                                                ? Colors.white
-                                                                : Colors.white
+                                                                    ? Colors.white
+                                                                    : Colors.white
                                                                     .withOpacity(
-                                                                        0.3),
-                                                            borderRadius:
+                                                                    0.3),
+                                                                borderRadius:
                                                                 BorderRadius
                                                                     .circular(
-                                                                        4),
-                                                          ),
-                                                        ),
+                                                                    4),
+                                                              ),
+                                                            ),
                                                       ),
                                                     ),
                                                     const SizedBox(width: 20),
@@ -460,9 +461,9 @@ class _InitialOnboardingScreenState extends State<InitialOnboardingScreen>
                                                           _pageController
                                                               .nextPage(
                                                             duration:
-                                                                const Duration(
-                                                                    milliseconds:
-                                                                        500),
+                                                            const Duration(
+                                                                milliseconds:
+                                                                500),
                                                             curve: Curves
                                                                 .easeInOutCubic,
                                                           );
@@ -478,7 +479,7 @@ class _InitialOnboardingScreenState extends State<InitialOnboardingScreen>
                                                             color: Colors.white,
                                                             fontSize: 16,
                                                             fontWeight:
-                                                                FontWeight.w600,
+                                                            FontWeight.w600,
                                                           ),
                                                         ),
                                                       )
@@ -496,28 +497,28 @@ class _InitialOnboardingScreenState extends State<InitialOnboardingScreen>
                                                             color: Colors.blue,
                                                             fontSize: 16,
                                                             fontWeight:
-                                                                FontWeight.bold,
+                                                            FontWeight.bold,
                                                           ),
                                                         ),
                                                         style: ElevatedButton
                                                             .styleFrom(
                                                           backgroundColor:
-                                                              Colors.white,
+                                                          Colors.white,
                                                           padding:
-                                                              const EdgeInsets
-                                                                  .symmetric(
+                                                          const EdgeInsets
+                                                              .symmetric(
                                                             horizontal: 24,
                                                             vertical: 12,
                                                           ),
                                                           elevation: 8,
                                                           shadowColor:
-                                                              Colors.black26,
+                                                          Colors.black26,
                                                           shape:
-                                                              RoundedRectangleBorder(
+                                                          RoundedRectangleBorder(
                                                             borderRadius:
-                                                                BorderRadius
-                                                                    .circular(
-                                                                        20),
+                                                            BorderRadius
+                                                                .circular(
+                                                                20),
                                                           ),
                                                         ),
                                                       ),
