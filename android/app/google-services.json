@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "622050701723",
+    "project_id": "wumpus-universe",
+    "storage_bucket": "wumpus-universe.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:622050701723:android:af0611ded19e33b973713e",
+        "android_client_info": {
+          "package_name": "com.example.wumpus_universe"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDYc2S1nNxxGTnYA5TBnAM58saDb41qfB0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
