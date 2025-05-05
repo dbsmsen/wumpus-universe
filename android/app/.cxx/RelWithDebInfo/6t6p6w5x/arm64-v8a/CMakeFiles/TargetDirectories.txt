@@ -1,0 +1,2 @@
+C:/Users/Debsoomonto/StudioProjects/wumpus_universe/android/app/.cxx/RelWithDebInfo/6t6p6w5x/arm64-v8a/CMakeFiles/edit_cache.dir
+C:/Users/Debsoomonto/StudioProjects/wumpus_universe/android/app/.cxx/RelWithDebInfo/6t6p6w5x/arm64-v8a/CMakeFiles/rebuild_cache.dir
