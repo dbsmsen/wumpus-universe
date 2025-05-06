@@ -363,152 +363,171 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Wumpus World'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () {
-              setState(() {
-                _initializeGame();
-              });
-            },
+      extendBodyBehindAppBar: true,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.deepPurple.shade800,
+              Colors.deepPurple.shade600,
+            ],
           ),
-        ],
-      ),
-      body: Column(
-        children: [
-          if (_showInstructions) _buildInstructionBanner(),
-          Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.blue.shade100,
-                    Colors.blue.shade50,
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              if (_showInstructions) _buildInstructionBanner(),
+              Expanded(
+                child: Row(
+                  children: [
+                    // Left sidebar with game info
+                    Container(
+                      width: 250,
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildSection(
+                            'Game Status',
+                            'Score: ${agent.score}\nMoves: ${agent.moves}',
+                            Icons.info,
+                            Colors.blue.shade300,
+                          ),
+                          if (_gameMessage.isNotEmpty)
+                            _buildSection(
+                              'Message',
+                              _gameMessage,
+                              agent.hasWon ? Icons.emoji_events : Icons.warning,
+                              agent.hasWon
+                                  ? Colors.green.shade300
+                                  : Colors.red.shade300,
+                            ),
+                          _buildSection(
+                            'Controls',
+                            'Use arrow buttons to move\nShoot arrow to kill Wumpus',
+                            Icons.gamepad,
+                            Colors.purple.shade300,
+                          ),
+                          _buildSection(
+                            'Tips',
+                            '• Watch for breeze and stench\n• Plan your path carefully\n• Remember your starting point',
+                            Icons.lightbulb,
+                            Colors.orange.shade300,
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Main game grid
+                    Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        margin: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          children: [
+                            Expanded(
+                              child: GridView.builder(
+                                gridDelegate:
+                                    SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: widget.columns,
+                                ),
+                                itemCount: widget.rows * widget.columns,
+                                itemBuilder: (_, index) {
+                                  final x = index % widget.columns;
+                                  final y = index ~/ widget.columns;
+                                  return _buildCell(x, y);
+                                },
+                              ),
+                            ),
+                            Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(15),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.1),
+                                    blurRadius: 10,
+                                    spreadRadius: 2,
+                                  ),
+                                ],
+                              ),
+                              margin: const EdgeInsets.all(8),
+                              padding: const EdgeInsets.all(8),
+                              child: Column(
+                                children: [
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceEvenly,
+                                    children: dir.Direction.values.map((d) {
+                                      return IconButton(
+                                        icon: Icon(_directionIcon(d), size: 32),
+                                        onPressed:
+                                            _gameOver ? null : () => _move(d),
+                                        style: IconButton.styleFrom(
+                                          backgroundColor: Colors.blue.shade100,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(10),
+                                          ),
+                                        ),
+                                      );
+                                    }).toList(),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  ElevatedButton(
+                                    onPressed: _gameOver || !agent.hasArrow
+                                        ? null
+                                        : _shootArrow,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.red.shade100,
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 20, vertical: 10),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                    ),
+                                    child: const Text('Shoot Arrow'),
+                                  ),
+                                  if (_gameOver)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 8.0),
+                                      child: ElevatedButton(
+                                        onPressed: () {
+                                          setState(() {
+                                            _initializeGame();
+                                          });
+                                        },
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor:
+                                              Colors.green.shade100,
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 20, vertical: 10),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(10),
+                                          ),
+                                        ),
+                                        child: const Text('New Game'),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
-              child: Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Column(
-                      children: [
-                        Text(
-                          'Score: ${agent.score}',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Text(
-                          'Moves: ${agent.moves}',
-                          style: const TextStyle(fontSize: 16),
-                        ),
-                        if (_gameMessage.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 8.0),
-                            child: Text(
-                              _gameMessage,
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: agent.hasWon ? Colors.green : Colors.red,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: GridView.builder(
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: widget.columns,
-                      ),
-                      itemCount: widget.rows * widget.columns,
-                      itemBuilder: (_, index) {
-                        final x = index % widget.columns;
-                        final y = index ~/ widget.columns;
-                        return _buildCell(x, y);
-                      },
-                    ),
-                  ),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.8),
-                      borderRadius: BorderRadius.circular(15),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 10,
-                          spreadRadius: 2,
-                        ),
-                      ],
-                    ),
-                    margin: const EdgeInsets.all(8),
-                    padding: const EdgeInsets.all(8),
-                    child: Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: dir.Direction.values.map((d) {
-                            return IconButton(
-                              icon: Icon(_directionIcon(d), size: 32),
-                              onPressed: _gameOver ? null : () => _move(d),
-                              style: IconButton.styleFrom(
-                                backgroundColor: Colors.blue.shade100,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                        const SizedBox(height: 8),
-                        ElevatedButton(
-                          onPressed:
-                              _gameOver || !agent.hasArrow ? null : _shootArrow,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red.shade100,
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 20, vertical: 10),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                          ),
-                          child: const Text('Shoot Arrow'),
-                        ),
-                        if (_gameOver)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 8.0),
-                            child: ElevatedButton(
-                              onPressed: () {
-                                setState(() {
-                                  _initializeGame();
-                                });
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.green.shade100,
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 20, vertical: 10),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                              ),
-                              child: const Text('New Game'),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -613,5 +632,65 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         _leaderboard = _leaderboard.sublist(0, 10);
       }
     }
+  }
+
+  Widget _buildSection(
+      String title, String content, IconData icon, Color accentColor) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.3),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: accentColor.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: accentColor, size: 24),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            content,
+            style: TextStyle(
+              fontSize: 14,
+              height: 1.6,
+              color: Colors.white.withOpacity(0.9),
+              letterSpacing: 0.3,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
