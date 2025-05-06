@@ -6,6 +6,7 @@ import '../widgets/auth_shared_widget.dart';
 import 'initial_onboarding_screen.dart';
 import 'register_screen.dart';
 import 'package:flutter/services.dart';
+import 'grid_selection_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -29,7 +30,7 @@ class _LoginScreenState extends State<LoginScreen>
         email: "${_usernameController.text}@example.com",
         password: _passwordController.text,
       );
-      _navigateToOnboarding();
+      _navigateToGridSelection();
     } catch (e) {
       _showError('Login failed. Please check credentials.');
     }
@@ -45,7 +46,7 @@ class _LoginScreenState extends State<LoginScreen>
         idToken: googleAuth.idToken,
       );
       await _auth.signInWithCredential(credential);
-      _navigateToOnboarding();
+      _navigateToGridSelection();
     } catch (e) {
       _showError('Google sign-in failed.');
     }
@@ -54,17 +55,17 @@ class _LoginScreenState extends State<LoginScreen>
   void _signInAsGuest() async {
     try {
       await _auth.signInAnonymously();
-      _navigateToOnboarding();
+      _navigateToGridSelection();
     } catch (e) {
       _showError('Guest sign-in failed.');
     }
   }
 
-  void _navigateToOnboarding() {
+  void _navigateToGridSelection() {
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder: (_) => const InitialOnboardingScreen(),
+        builder: (_) => const GridSelectionScreen(),
       ),
     );
   }
