@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../widgets/auth_shared_widget.dart';
 import 'initial_onboarding_screen.dart';
 import 'package:flutter/services.dart';
+import 'grid_selection_screen.dart';
+import 'login_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -32,9 +34,17 @@ class _RegisterScreenState extends State<RegisterScreen>
         email: "${_usernameController.text}@example.com",
         password: _passwordController.text,
       );
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Registration successful! Please login.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      // Navigate to login screen
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const InitialOnboardingScreen()),
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
       );
     } catch (e) {
       _showError('Registration failed');
