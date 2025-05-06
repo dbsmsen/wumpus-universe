@@ -8,7 +8,7 @@ class GameScreen extends StatefulWidget {
   final int rows;
   final int columns;
 
-  const GameScreen({super.key, this.rows = 4, this.columns = 4});
+  const GameScreen({super.key, required this.rows, required this.columns});
 
   @override
   State<GameScreen> createState() => _GameScreenState();
@@ -84,7 +84,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     // Adjust gold and obstacle placement based on grid size
     int goldX, goldY;
     int attempts = 0;
-    const maxAttempts = 100; // Increased attempts for larger grids
+    const maxAttempts = 100;
 
     // Calculate the number of obstacles based on grid size
     int pitCount = (widget.rows * widget.columns ~/ 10).clamp(1, 5);
@@ -95,12 +95,10 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       goldX = _random.nextInt(widget.columns);
       goldY = _random.nextInt(widget.rows);
       attempts++;
-    } while (
-      (!_isFarEnough(goldX, goldY, agent.x, agent.y) ||
-       (goldX == agent.x && goldY == agent.y) ||
-       (goldX == 0 && goldY == 0)) &&
-      attempts < maxAttempts
-    );
+    } while ((!_isFarEnough(goldX, goldY, agent.x, agent.y) ||
+            (goldX == agent.x && goldY == agent.y) ||
+            (goldX == 0 && goldY == 0)) &&
+        attempts < maxAttempts);
 
     // If we couldn't find a suitable position, place at a random valid location
     if (attempts >= maxAttempts) {
@@ -149,175 +147,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     }
   }
 
-  Future<void> _showNameInputDialog() async {
-    String playerName = '';
-    await showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Congratulations!'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('You won the game!'),
-              const SizedBox(height: 16),
-              TextField(
-                decoration: const InputDecoration(
-                  labelText: 'Enter your name',
-                  border: OutlineInputBorder(),
-                ),
-                onChanged: (value) {
-                  playerName = value;
-                },
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                if (playerName.trim().isNotEmpty) {
-                  Navigator.of(context).pop();
-                  _addToLeaderboard(playerName);
-                }
-              },
-              child: const Text('Submit'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _addToLeaderboard(String playerName) {
-    if (agent.hasWon) {
-      _leaderboard.add({
-        'name': playerName,
-        'score': agent.score,
-        'moves': agent.moves,
-        'date': DateTime.now().toString().split('.')[0],
-      });
-      _leaderboard.sort((a, b) => b['score'].compareTo(a['score']));
-      if (_leaderboard.length > 10) {
-        _leaderboard = _leaderboard.sublist(0, 10);
-      }
-    }
-  }
-
-  Widget _buildDrawer() {
-    return Drawer(
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          DrawerHeader(
-            decoration: BoxDecoration(
-              color: Colors.blue.shade200,
-            ),
-            child: const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Wumpus World',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                  ),
-                ),
-                SizedBox(height: 10),
-                Text(
-                  'Leaderboard & Info',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          ListTile(
-            title: const Text('Tutorial'),
-            leading: const Icon(Icons.school),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.pushNamed(context, '/tutorial');
-            },
-          ),
-          ListTile(
-            title: const Text('Rules & Instructions'),
-            leading: const Icon(Icons.menu_book),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.pushNamed(context, '/rules');
-            },
-          ),
-          const Divider(),
-          const ListTile(
-            title: Text('Leaderboard'),
-            leading: Icon(Icons.leaderboard),
-          ),
-          ..._leaderboard.map((score) => ListTile(
-                title: Text('${score['name']} - Score: ${score['score']}'),
-                subtitle:
-                    Text('Moves: ${score['moves']}\nDate: ${score['date']}'),
-              )),
-          const Divider(),
-          const ListTile(
-            title: Text('Game Rules'),
-            leading: Icon(Icons.info),
-          ),
-          const Padding(
-            padding: EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('• Find the gold and return to start'),
-                Text('• Avoid pits and the Wumpus'),
-                Text('• Use arrow to shoot Wumpus'),
-                Text('• One arrow per game'),
-                Text('• Watch for stench and breeze'),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInstructionBanner() {
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 500),
-      child: Container(
-        key: ValueKey<int>(_currentInstruction),
-        color: Colors.blue.shade200,
-        padding: const EdgeInsets.all(16.0),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                _instructions[_currentInstruction],
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.close, color: Colors.white),
-              onPressed: () {
-                setState(() {
-                  _showInstructions = false;
-                });
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  List<List<Cell>> generateGrid({int rows = 4, int columns = 4}) {
+  List<List<Cell>> generateGrid({required int rows, required int columns}) {
     List<List<Cell>> newGrid = List.generate(
       rows,
       (y) => List.generate(
@@ -326,22 +156,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       ),
     );
     return newGrid;
-  }
-
-  void _placeRandomObstacles() {
-    // Calculate the number of obstacles based on grid size
-    int pitCount = (widget.rows * widget.columns ~/ 10).clamp(1, 5);
-    int wumpusCount = 1;
-
-    // Place pits
-    for (int i = 0; i < pitCount; i++) {
-      _placeObstacle(CellType.pit);
-    }
-
-    // Place Wumpus
-    for (int i = 0; i < wumpusCount; i++) {
-      _placeObstacle(CellType.wumpus);
-    }
   }
 
   void _placeObstacle(CellType type) {
@@ -461,19 +275,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     );
   }
 
-  IconData _directionIcon(dir.Direction direction) {
-    switch (direction) {
-      case dir.Direction.up:
-        return Icons.arrow_upward;
-      case dir.Direction.right:
-        return Icons.arrow_forward;
-      case dir.Direction.down:
-        return Icons.arrow_downward;
-      case dir.Direction.left:
-        return Icons.arrow_back;
-    }
-  }
-
   void _move(dir.Direction direction) {
     if (_gameOver) return;
 
@@ -522,7 +323,10 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         int checkX = agent.x;
         int checkY = agent.y;
 
-        while (checkX >= 0 && checkX < 4 && checkY >= 0 && checkY < 6) {
+        while (checkX >= 0 &&
+            checkX < widget.columns &&
+            checkY >= 0 &&
+            checkY < widget.rows) {
           final cell = grid[checkY][checkX];
           if (cell.hasWumpus && !cell.isWumpusDead) {
             cell.isWumpusDead = true;
@@ -572,7 +376,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
           ),
         ],
       ),
-      drawer: _buildDrawer(),
       body: Column(
         children: [
           if (_showInstructions) _buildInstructionBanner(),
@@ -599,25 +402,11 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            shadows: [
-                              Shadow(
-                                color: Colors.white,
-                                blurRadius: 2,
-                              ),
-                            ],
                           ),
                         ),
                         Text(
                           'Moves: ${agent.moves}',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            shadows: [
-                              Shadow(
-                                color: Colors.white,
-                                blurRadius: 2,
-                              ),
-                            ],
-                          ),
+                          style: const TextStyle(fontSize: 16),
                         ),
                         if (_gameMessage.isNotEmpty)
                           Padding(
@@ -628,12 +417,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                                 fontSize: 16,
                                 color: agent.hasWon ? Colors.green : Colors.red,
                                 fontWeight: FontWeight.bold,
-                                shadows: [
-                                  Shadow(
-                                    color: Colors.white,
-                                    blurRadius: 2,
-                                  ),
-                                ],
                               ),
                             ),
                           ),
@@ -642,14 +425,13 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                   ),
                   Expanded(
                     child: GridView.builder(
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 4,
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: widget.columns,
                       ),
-                      itemCount: 24,
+                      itemCount: widget.rows * widget.columns,
                       itemBuilder: (_, index) {
-                        final x = index % 4;
-                        final y = index ~/ 4;
+                        final x = index % widget.columns;
+                        final y = index ~/ widget.columns;
                         return _buildCell(x, y);
                       },
                     ),
@@ -705,7 +487,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                             child: ElevatedButton(
                               onPressed: () {
                                 setState(() {
-                                  _addToLeaderboard('');
                                   _initializeGame();
                                 });
                               },
@@ -730,5 +511,107 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         ],
       ),
     );
+  }
+
+  Widget _buildInstructionBanner() {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 500),
+      child: Container(
+        key: ValueKey<int>(_currentInstruction),
+        color: Colors.blue.shade200,
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                _instructions[_currentInstruction],
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.close, color: Colors.white),
+              onPressed: () {
+                setState(() {
+                  _showInstructions = false;
+                });
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  IconData _directionIcon(dir.Direction direction) {
+    switch (direction) {
+      case dir.Direction.up:
+        return Icons.arrow_upward;
+      case dir.Direction.right:
+        return Icons.arrow_forward;
+      case dir.Direction.down:
+        return Icons.arrow_downward;
+      case dir.Direction.left:
+        return Icons.arrow_back;
+    }
+  }
+
+  Future<void> _showNameInputDialog() async {
+    String playerName = '';
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Congratulations!'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('You won the game!'),
+              const SizedBox(height: 16),
+              TextField(
+                decoration: const InputDecoration(
+                  labelText: 'Enter your name',
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (value) {
+                  playerName = value;
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                if (playerName.trim().isNotEmpty) {
+                  Navigator.of(context).pop();
+                  _addToLeaderboard(playerName);
+                }
+              },
+              child: const Text('Submit'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _addToLeaderboard(String playerName) {
+    if (agent.hasWon) {
+      _leaderboard.add({
+        'name': playerName,
+        'score': agent.score,
+        'moves': agent.moves,
+        'date': DateTime.now().toString().split('.')[0],
+      });
+      _leaderboard.sort((a, b) => b['score'].compareTo(a['score']));
+      if (_leaderboard.length > 10) {
+        _leaderboard = _leaderboard.sublist(0, 10);
+      }
+    }
   }
 }

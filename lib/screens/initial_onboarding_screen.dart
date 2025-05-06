@@ -90,7 +90,7 @@ class _InitialOnboardingScreenState extends State<InitialOnboardingScreen>
       'title': 'Begin Your Adventure',
       'description':
       'Are you ready to explore the mysterious cave system and find the hidden gold?',
-      'image': 'assets/images/agent.png',
+      'image': 'assets/images/wumpus_dead.png',
       'gradientColors': [
         const Color(0xFF1A237E), // Deep Indigo
         const Color(0xFF3949AB), // Indigo
