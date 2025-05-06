@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'game_screen.dart';
+import 'grid_selection_screen.dart';
 
 class InstructionScreen extends StatelessWidget {
   const InstructionScreen({super.key});
@@ -30,7 +30,8 @@ class InstructionScreen extends StatelessWidget {
             const SizedBox(height: 10),
             const InstructionItem(
               imagePath: 'assets/images/agent.png',
-              text: 'You are the agent. Move through the grid to find the gold.',
+              text:
+                  'You are the agent. Move through the grid to find the gold.',
             ),
             const InstructionItem(
               imagePath: 'assets/images/pit.png',
@@ -52,17 +53,17 @@ class InstructionScreen extends StatelessWidget {
             const SizedBox(height: 10),
             const Text(
               '• The cave is a 4x4 grid with 16 rooms connected by passageways.\n'
-                  '• The Wumpus can be killed by the agent if the agent faces it and shoots an arrow.\n'
-                  '• Each room may contain a pit, a Wumpus, or gold.\n'
-                  '• The agent senses: stench (near the Wumpus), breeze (near a pit), glitter (when gold is present), and bump (if the agent walks into a wall).\n'
-                  '• The agent earns +1000 points for finding the gold and exiting the cave. The agent loses -1000 points for falling into a pit or being eaten by the Wumpus.\n',
+              '• The Wumpus can be killed by the agent if the agent faces it and shoots an arrow.\n'
+              '• Each room may contain a pit, a Wumpus, or gold.\n'
+              '• The agent senses: stench (near the Wumpus), breeze (near a pit), glitter (when gold is present), and bump (if the agent walks into a wall).\n'
+              '• The agent earns +1000 points for finding the gold and exiting the cave. The agent loses -1000 points for falling into a pit or being eaten by the Wumpus.\n',
               style: TextStyle(fontSize: 16),
             ),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const GameScreen()),
+                MaterialPageRoute(builder: (_) => const GridSelectionScreen()),
               ),
               child: const Text("Let's Play!"),
             )
@@ -77,7 +78,8 @@ class InstructionItem extends StatelessWidget {
   final String imagePath;
   final String text;
 
-  const InstructionItem({super.key, required this.imagePath, required this.text});
+  const InstructionItem(
+      {super.key, required this.imagePath, required this.text});
 
   @override
   Widget build(BuildContext context) {
