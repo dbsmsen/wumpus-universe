@@ -28,19 +28,19 @@ class InstructionScreen extends StatelessWidget {
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
-            InstructionItem(
+            const InstructionItem(
               imagePath: 'assets/images/agent.png',
               text: 'You are the agent. Move through the grid to find the gold.',
             ),
-            InstructionItem(
+            const InstructionItem(
               imagePath: 'assets/images/pit.png',
               text: 'Avoid pits! Falling into one ends the game.',
             ),
-            InstructionItem(
+            const InstructionItem(
               imagePath: 'assets/images/wumpus.png',
               text: 'Beware of the Wumpus. It kills you if you enter its room.',
             ),
-            InstructionItem(
+            const InstructionItem(
               imagePath: 'assets/images/gold.png',
               text: 'Find the gold and return to the start to win!',
             ),
@@ -77,7 +77,7 @@ class InstructionItem extends StatelessWidget {
   final String imagePath;
   final String text;
 
-  const InstructionItem({required this.imagePath, required this.text});
+  const InstructionItem({super.key, required this.imagePath, required this.text});
 
   @override
   Widget build(BuildContext context) {

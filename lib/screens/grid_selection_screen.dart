@@ -116,13 +116,26 @@ class _GridSelectionScreenState extends State<GridSelectionScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Select Grid'),
-        backgroundColor: Colors.deepPurple[800],
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.deepPurple.withOpacity(0.5), Colors.transparent],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+          ),
+        ),
       ),
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           image: DecorationImage(
             image: AssetImage('assets/images/grid_background.png'),
             fit: BoxFit.cover,
+            onError: (exception, stackTrace) {
+              print('Error loading background image: $exception');
+            },
           ),
         ),
         child: Center(
@@ -138,15 +151,7 @@ class _GridSelectionScreenState extends State<GridSelectionScreen> {
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(20),
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Colors.deepPurple[900]!.withOpacity(0.9),
-                        Colors.deepPurple[700]!.withOpacity(0.9),
-                        Colors.deepPurple[500]!.withOpacity(0.9),
-                      ],
-                    ),
+                    color: Colors.deepPurple.withOpacity(0.3),
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
