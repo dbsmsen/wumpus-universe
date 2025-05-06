@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../widgets/auth_shared_widget.dart';
 import 'initial_onboarding_screen.dart';
 import 'package:flutter/services.dart';
-import 'package:animations/animations.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -11,7 +11,8 @@ class RegisterScreen extends StatefulWidget {
   State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProviderStateMixin {
+class _RegisterScreenState extends State<RegisterScreen>
+    with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
@@ -41,7 +42,8 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -86,7 +88,6 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
     ));
 
     return Scaffold(
-      backgroundColor: const Color(0xFF2C3E50),
       body: SafeArea(
         child: Container(
           decoration: BoxDecoration(
@@ -106,105 +107,108 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                 opacity: _fadeAnimation,
                 child: SlideTransition(
                   position: _slideAnimation,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Center(
-                        child: Column(
-                          children: [
-                            Hero(
-                              tag: 'app_logo',
-                              child: Icon(
-                                Icons.explore_outlined,
-                                size: 100,
-                                color: Colors.amber[300],
+                  child: GlassmorphicCard(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: TextButton.icon(
+                            onPressed: () => Navigator.pop(context),
+                            icon: Icon(Icons.arrow_back,
+                                color: Colors.amber[300]),
+                            label: Text('Back to Login',
+                                style: TextStyle(color: Colors.amber[300])),
+                          ),
+                        ),
+                        Center(
+                          child: Column(
+                            children: [
+                              Hero(
+                                tag: 'app_logo',
+                                child: Icon(
+                                  Icons.explore_outlined,
+                                  size: 100,
+                                  color: Colors.amber[300],
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'Create Account',
-                              style: TextStyle(
-                                fontSize: 32,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.amber[300],
-                                letterSpacing: 1.2,
+                              const SizedBox(height: 16),
+                              Text(
+                                'Create Account',
+                                style: TextStyle(
+                                  fontSize: 32,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.amber[300],
+                                  letterSpacing: 1.2,
+                                ),
+                                textAlign: TextAlign.center,
                               ),
-                              textAlign: TextAlign.center,
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 32),
+                        TextField(
+                          controller: _usernameController,
+                          style: const TextStyle(color: Colors.white),
+                          decoration: InputDecoration(
+                            labelText: 'Username',
+                            labelStyle: TextStyle(color: Colors.amber[300]),
+                            prefixIcon:
+                                Icon(Icons.person, color: Colors.amber[300]),
+                            filled: true,
+                            fillColor: const Color(0xFF34495E),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
                             ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 32),
-                      TextField(
-                        controller: _usernameController,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
-                          labelText: 'Username',
-                          labelStyle: TextStyle(color: Colors.amber[300]),
-                          prefixIcon: Icon(Icons.person, color: Colors.amber[300]),
-                          filled: true,
-                          fillColor: const Color(0xFF34495E),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      TextField(
-                        controller: _passwordController,
-                        obscureText: true,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
-                          labelText: 'Password',
-                          labelStyle: TextStyle(color: Colors.amber[300]),
-                          prefixIcon: Icon(Icons.lock, color: Colors.amber[300]),
-                          filled: true,
-                          fillColor: const Color(0xFF34495E),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: _passwordController,
+                          obscureText: true,
+                          style: const TextStyle(color: Colors.white),
+                          decoration: InputDecoration(
+                            labelText: 'Password',
+                            labelStyle: TextStyle(color: Colors.amber[300]),
+                            prefixIcon:
+                                Icon(Icons.lock, color: Colors.amber[300]),
+                            filled: true,
+                            fillColor: const Color(0xFF34495E),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      TextField(
-                        controller: _confirmController,
-                        obscureText: true,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
-                          labelText: 'Confirm Password',
-                          labelStyle: TextStyle(color: Colors.amber[300]),
-                          prefixIcon: Icon(Icons.lock_outline, color: Colors.amber[300]),
-                          filled: true,
-                          fillColor: const Color(0xFF34495E),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: _confirmController,
+                          obscureText: true,
+                          style: const TextStyle(color: Colors.white),
+                          decoration: InputDecoration(
+                            labelText: 'Confirm Password',
+                            labelStyle: TextStyle(color: Colors.amber[300]),
+                            prefixIcon: Icon(Icons.lock_outline,
+                                color: Colors.amber[300]),
+                            filled: true,
+                            fillColor: const Color(0xFF34495E),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 24),
-                      ElevatedButton(
-                        onPressed: _register,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.amber[300],
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                        const SizedBox(height: 24),
+                        AnimatedButton(
+                          onPressed: _register,
+                          text: 'Create Account',
+                          icon: Icons.app_registration_rounded,
+                          color: Colors.amber[300]!,
                         ),
-                        child: Text(
-                          'Create Account',
-                          style: TextStyle(
-                            color: Colors.black87,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
