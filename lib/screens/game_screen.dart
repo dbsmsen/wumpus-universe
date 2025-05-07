@@ -1,8 +1,15 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'dart:math';
 import '../models/agent.dart';
 import '../models/cell.dart';
 import '../models/direction.dart' as dir;
+import '../models/grid.dart';
+import '../models/wumpus_ai_solver.dart';
+import '../controllers/game_controller.dart';
+import '../widgets/game_grid.dart';
+import '../widgets/game_controls.dart';
+import '../widgets/game_info_panel.dart';
 
 class GameScreen extends StatefulWidget {
   final int rows;
@@ -15,568 +22,23 @@ class GameScreen extends StatefulWidget {
 }
 
 class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
-  late Agent agent;
-  late List<List<Cell>> grid;
-  bool _autoMoveEnabled = false;
-  final _random = Random();
-  bool _gameOver = false;
-  String _gameMessage = '';
-  late AnimationController _animationController;
-  late Animation<double> _scaleAnimation;
-  late Animation<double> _rotateAnimation;
+  late GameController _gameController;
   Map<String, AnimationController> _cellAnimations = {};
-  List<Map<String, dynamic>> _leaderboard = [];
-  bool _showInstructions = true;
-  int _currentInstruction = 0;
-  final List<String> _instructions = [
-    "Welcome to Wumpus World!",
-    "Find the gold and return to your starting position.",
-    "Watch out for pits and the Wumpus!",
-    "Use the arrow button to shoot the Wumpus.",
-    "You can only shoot once, so aim carefully!",
-    "Good luck, adventurer!"
-  ];
 
   @override
   void initState() {
     super.initState();
-    agent = Agent();
-    grid = generateGrid(rows: widget.rows, columns: widget.columns);
-    _initializeGame();
-
-    // Initialize main animation controller
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 300),
-      vsync: this,
-    );
-
-    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
-    );
-
-    _rotateAnimation = Tween<double>(begin: 0, end: 2 * pi).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
-    );
+    _gameController =
+        GameController(rows: widget.rows, columns: widget.columns);
   }
 
   @override
   void dispose() {
-    _animationController.dispose();
-    for (var controller in _cellAnimations.values) {
+    _gameController.dispose();
+    _cellAnimations.forEach((key, controller) {
       controller.dispose();
-    }
+    });
     super.dispose();
-  }
-
-  bool _isFarEnough(int x1, int y1, int x2, int y2) {
-    // Calculate Manhattan distance between two points
-    return (x1 - x2).abs() + (y1 - y2).abs() >=
-        3; // Minimum distance of 3 cells
-  }
-
-  void _initializeGame() {
-    // Place agent at random edge position
-    _placeAgentAtRandomEdge();
-    agent.reset();
-    _gameOver = false;
-    _gameMessage = '';
-
-    // Adjust gold and obstacle placement based on grid size
-    int goldX, goldY;
-    int attempts = 0;
-    const maxAttempts = 100;
-
-    // Calculate the number of obstacles based on grid size
-    int pitCount = (widget.rows * widget.columns ~/ 10).clamp(1, 5);
-    int wumpusCount = 1;
-
-    // Find a suitable position for gold
-    do {
-      goldX = _random.nextInt(widget.columns);
-      goldY = _random.nextInt(widget.rows);
-      attempts++;
-    } while ((!_isFarEnough(goldX, goldY, agent.x, agent.y) ||
-            (goldX == agent.x && goldY == agent.y) ||
-            (goldX == 0 && goldY == 0)) &&
-        attempts < maxAttempts);
-
-    // If we couldn't find a suitable position, place at a random valid location
-    if (attempts >= maxAttempts) {
-      goldX = _random.nextInt(widget.columns);
-      goldY = _random.nextInt(widget.rows);
-    }
-
-    grid[goldY][goldX].hasGold = true;
-    grid[goldY][goldX].cellType = CellType.gold;
-
-    // Place hazards with adjusted count
-    for (int i = 0; i < pitCount; i++) {
-      _placeObstacle(CellType.pit);
-    }
-    for (int i = 0; i < wumpusCount; i++) {
-      _placeObstacle(CellType.wumpus);
-    }
-
-    // Set up percepts
-    for (var row in grid) {
-      for (var cell in row) {
-        cell.setHazards(grid);
-      }
-    }
-  }
-
-  void _placeAgentAtRandomEdge() {
-    int edge = _random.nextInt(4); // 0: top, 1: right, 2: bottom, 3: left
-    switch (edge) {
-      case 0: // top edge
-        agent.x = _random.nextInt(widget.columns);
-        agent.y = 0;
-        break;
-      case 1: // right edge
-        agent.x = widget.columns - 1;
-        agent.y = _random.nextInt(widget.rows);
-        break;
-      case 2: // bottom edge
-        agent.x = _random.nextInt(widget.columns);
-        agent.y = widget.rows - 1;
-        break;
-      case 3: // left edge
-        agent.x = 0;
-        agent.y = _random.nextInt(widget.rows);
-        break;
-    }
-  }
-
-  List<List<Cell>> generateGrid({required int rows, required int columns}) {
-    List<List<Cell>> newGrid = List.generate(
-      rows,
-      (y) => List.generate(
-        columns,
-        (x) => Cell(x: x, y: y),
-      ),
-    );
-    return newGrid;
-  }
-
-  void _placeObstacle(CellType type) {
-    int x, y;
-    int attempts = 0;
-    const maxAttempts = 100;
-
-    do {
-      x = _random.nextInt(widget.columns);
-      y = _random.nextInt(widget.rows);
-      attempts++;
-
-      // Avoid placing on agent's position or gold
-      if (x == agent.x && y == agent.y) continue;
-      if (grid[y][x].hasGold) continue;
-
-      // Ensure no duplicate obstacles
-      if (grid[y][x].cellType == CellType.empty) {
-        switch (type) {
-          case CellType.pit:
-            grid[y][x].hasPit = true;
-            grid[y][x].cellType = CellType.pit;
-            break;
-          case CellType.wumpus:
-            grid[y][x].hasWumpus = true;
-            grid[y][x].cellType = CellType.wumpus;
-            break;
-          default:
-            break;
-        }
-        break;
-      }
-    } while (attempts < maxAttempts);
-  }
-
-  Widget _buildCell(int x, int y) {
-    final cell = grid[y][x];
-    final isAgentHere = x == agent.x && y == agent.y;
-    final isVisible = _isNeighbor(x, y) || isAgentHere;
-
-    return Container(
-      margin: const EdgeInsets.all(2),
-      decoration: BoxDecoration(
-        color: isVisible ? Colors.white : Colors.grey.shade300,
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 4,
-            spreadRadius: 1,
-          ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          if (isVisible) ...[
-            // Only show stench and breeze in neighboring cells
-            if (!isAgentHere) ...[
-              if (cell.stench)
-                _buildAnimatedImage('assets/images/stench.png', 'stench'),
-              if (cell.breeze)
-                _buildAnimatedImage('assets/images/breeze.png', 'breeze'),
-            ],
-            // Only show hazards and gold when agent is on the cell
-            if (isAgentHere) ...[
-              if (cell.hasPit)
-                _buildAnimatedImage('assets/images/pit.png', 'pit'),
-              if (cell.hasWumpus && !cell.isWumpusDead)
-                _buildAnimatedImage('assets/images/wumpus.png', 'wumpus'),
-              if (cell.hasWumpus && cell.isWumpusDead)
-                _buildAnimatedImage(
-                    'assets/images/wumpus_dead.png', 'wumpus_dead'),
-              if (cell.hasGold)
-                _buildAnimatedImage('assets/images/gold.png', 'gold'),
-              if (cell.glitter)
-                _buildAnimatedImage('assets/images/glitter.png', 'glitter'),
-            ],
-          ],
-          if (isAgentHere) _buildAnimatedAgent(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAnimatedImage(String imagePath, String key) {
-    if (!_cellAnimations.containsKey(key)) {
-      _cellAnimations[key] = AnimationController(
-        duration: const Duration(milliseconds: 500),
-        vsync: this,
-      )..repeat(reverse: true);
-    }
-
-    return FadeTransition(
-      opacity: _cellAnimations[key]!,
-      child: Image.asset(
-        imagePath,
-        fit: BoxFit.contain,
-      ),
-    );
-  }
-
-  Widget _buildAnimatedAgent() {
-    return AnimatedBuilder(
-      animation: _animationController,
-      builder: (context, child) {
-        return Transform.rotate(
-          angle: _rotateAnimation.value,
-          child: Transform.scale(
-            scale: _scaleAnimation.value,
-            child: Image.asset(
-              'assets/images/agent.png',
-              fit: BoxFit.contain,
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  void _move(dir.Direction direction) {
-    if (_gameOver) return;
-
-    setState(() {
-      agent.setDirection(direction);
-      agent.move(direction);
-
-      // Handle current cell effects
-      _handleCurrentCell();
-    });
-  }
-
-  void _handleCurrentCell() {
-    final cell = grid[agent.y][agent.x];
-
-    if (cell.hasPit) {
-      _gameOver = true;
-      _gameMessage = 'You fell into a pit!';
-      agent.die();
-    } else if (cell.hasWumpus && !cell.isWumpusDead) {
-      _gameOver = true;
-      _gameMessage = 'The Wumpus got you!';
-      agent.die();
-    } else if (cell.hasGold) {
-      cell.hasGold = false;
-      cell.cellType = CellType.empty;
-      agent.pickGold();
-      _gameMessage = 'You found the gold!';
-    }
-
-    // Check win condition
-    if (agent.canClimbOut()) {
-      _gameOver = true;
-      agent.checkWin();
-      _gameMessage = 'You won!';
-      _showNameInputDialog();
-    }
-  }
-
-  void _shootArrow() {
-    if (_gameOver || !agent.hasArrow) return;
-
-    setState(() {
-      if (agent.shootArrow()) {
-        // Check if Wumpus is in the line of fire
-        int checkX = agent.x;
-        int checkY = agent.y;
-
-        while (checkX >= 0 &&
-            checkX < widget.columns &&
-            checkY >= 0 &&
-            checkY < widget.rows) {
-          final cell = grid[checkY][checkX];
-          if (cell.hasWumpus && !cell.isWumpusDead) {
-            cell.isWumpusDead = true;
-            _gameMessage = 'You killed the Wumpus!';
-            agent.addPoints(500);
-            break;
-          }
-
-          // Move in the direction of the arrow
-          switch (agent.direction) {
-            case dir.Direction.up:
-              checkY--;
-              break;
-            case dir.Direction.right:
-              checkX++;
-              break;
-            case dir.Direction.down:
-              checkY++;
-              break;
-            case dir.Direction.left:
-              checkX--;
-              break;
-          }
-        }
-      }
-    });
-  }
-
-  bool _isNeighbor(int x, int y) {
-    return (x == agent.x && (y == agent.y - 1 || y == agent.y + 1)) ||
-        (y == agent.y && (x == agent.x - 1 || x == agent.x + 1));
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Colors.deepPurple.shade800,
-              Colors.deepPurple.shade600,
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              if (_showInstructions) _buildInstructionBanner(),
-              Expanded(
-                child: Row(
-                  children: [
-                    // Left sidebar with game info
-                    Container(
-                      width: 250,
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildSection(
-                            'Game Status',
-                            'Score: ${agent.score}\nMoves: ${agent.moves}',
-                            Icons.info,
-                            Colors.blue.shade300,
-                          ),
-                          if (_gameMessage.isNotEmpty)
-                            _buildSection(
-                              'Message',
-                              _gameMessage,
-                              agent.hasWon ? Icons.emoji_events : Icons.warning,
-                              agent.hasWon
-                                  ? Colors.green.shade300
-                                  : Colors.red.shade300,
-                            ),
-                          _buildSection(
-                            'Controls',
-                            'Use arrow buttons to move\nShoot arrow to kill Wumpus',
-                            Icons.gamepad,
-                            Colors.purple.shade300,
-                          ),
-                          _buildSection(
-                            'Tips',
-                            '• Watch for breeze and stench\n• Plan your path carefully\n• Remember your starting point',
-                            Icons.lightbulb,
-                            Colors.orange.shade300,
-                          ),
-                        ],
-                      ),
-                    ),
-                    // Main game grid
-                    Expanded(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        margin: const EdgeInsets.all(16),
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          children: [
-                            Expanded(
-                              child: GridView.builder(
-                                gridDelegate:
-                                    SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: widget.columns,
-                                ),
-                                itemCount: widget.rows * widget.columns,
-                                itemBuilder: (_, index) {
-                                  final x = index % widget.columns;
-                                  final y = index ~/ widget.columns;
-                                  return _buildCell(x, y);
-                                },
-                              ),
-                            ),
-                            Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(15),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
-                                    blurRadius: 10,
-                                    spreadRadius: 2,
-                                  ),
-                                ],
-                              ),
-                              margin: const EdgeInsets.all(8),
-                              padding: const EdgeInsets.all(8),
-                              child: Column(
-                                children: [
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceEvenly,
-                                    children: dir.Direction.values.map((d) {
-                                      return IconButton(
-                                        icon: Icon(_directionIcon(d), size: 32),
-                                        onPressed:
-                                            _gameOver ? null : () => _move(d),
-                                        style: IconButton.styleFrom(
-                                          backgroundColor: Colors.blue.shade100,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(10),
-                                          ),
-                                        ),
-                                      );
-                                    }).toList(),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  ElevatedButton(
-                                    onPressed: _gameOver || !agent.hasArrow
-                                        ? null
-                                        : _shootArrow,
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.red.shade100,
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 20, vertical: 10),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                    ),
-                                    child: const Text('Shoot Arrow'),
-                                  ),
-                                  if (_gameOver)
-                                    Padding(
-                                      padding: const EdgeInsets.only(top: 8.0),
-                                      child: ElevatedButton(
-                                        onPressed: () {
-                                          setState(() {
-                                            _initializeGame();
-                                          });
-                                        },
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor:
-                                              Colors.green.shade100,
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 20, vertical: 10),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(10),
-                                          ),
-                                        ),
-                                        child: const Text('New Game'),
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInstructionBanner() {
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 500),
-      child: Container(
-        key: ValueKey<int>(_currentInstruction),
-        color: Colors.blue.shade200,
-        padding: const EdgeInsets.all(16.0),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                _instructions[_currentInstruction],
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.close, color: Colors.white),
-              onPressed: () {
-                setState(() {
-                  _showInstructions = false;
-                });
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  IconData _directionIcon(dir.Direction direction) {
-    switch (direction) {
-      case dir.Direction.up:
-        return Icons.arrow_upward;
-      case dir.Direction.right:
-        return Icons.arrow_forward;
-      case dir.Direction.down:
-        return Icons.arrow_downward;
-      case dir.Direction.left:
-        return Icons.arrow_back;
-    }
   }
 
   Future<void> _showNameInputDialog() async {
@@ -620,77 +82,172 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   }
 
   void _addToLeaderboard(String playerName) {
-    if (agent.hasWon) {
-      _leaderboard.add({
-        'name': playerName,
-        'score': agent.score,
-        'moves': agent.moves,
-        'date': DateTime.now().toString().split('.')[0],
-      });
-      _leaderboard.sort((a, b) => b['score'].compareTo(a['score']));
-      if (_leaderboard.length > 10) {
-        _leaderboard = _leaderboard.sublist(0, 10);
-      }
+    if (_gameController.agent.hasWon) {
+      // Add to leaderboard logic here
     }
   }
 
-  Widget _buildSection(
-      String title, String content, IconData icon, Color accentColor) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.3),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+  void _autoSolveWumpusWorld() {
+    final aiSolver = WumpusAISolver(
+      agent: _gameController.agent,
+      grid: _gameController.grid.cells,
+      rows: widget.rows,
+      columns: widget.columns,
+    );
+
+    setState(() {
+      _gameController.autoMoveEnabled = true;
+      _gameController.gameMessage = 'AI solving the Wumpus World...';
+    });
+
+    aiSolver.solve(
+      onMove: (move) {
+        if (move != null) {
+          setState(() {
+            _gameController.agent.setDirection(move);
+            _gameController.move(move);
+          });
+        }
+      },
+      onComplete: () {
+        setState(() {
+          _gameController.autoMoveEnabled = false;
+          _gameController.gameMessage = 'AI solution complete!';
+        });
+      },
+      onMessage: (message) {
+        setState(() {
+          _gameController.gameMessage = message;
+        });
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      extendBodyBehindAppBar: true,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.deepPurple.shade800,
+              Colors.deepPurple.shade600,
+            ],
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+        ),
+        child: SafeArea(
+          child: Column(
             children: [
+              // Game Duration Section
               Container(
-                padding: const EdgeInsets.all(8),
+                width: double.infinity,
+                padding:
+                    const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
                 decoration: BoxDecoration(
-                  color: accentColor.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(10),
+                  color: Colors.white.withOpacity(0.1),
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(20),
+                    bottomRight: Radius.circular(20),
+                  ),
                 ),
-                child: Icon(icon, color: accentColor, size: 24),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.timer,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Game Duration: ${_formatDuration(_gameController.gameDuration)}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(width: 12),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                  letterSpacing: 0.5,
+              Expanded(
+                child: Row(
+                  children: [
+                    // Left sidebar with game info
+                    GameInfoPanel(
+                      agent: _gameController.agent,
+                      gameMessage: _gameController.gameMessage,
+                      gameDuration: _gameController.gameDuration,
+                      hasWon: _gameController.agent.hasWon,
+                      isGameOver: _gameController.isGameOver,
+                      autoMoveEnabled: _gameController.autoMoveEnabled,
+                      hasArrow: _gameController.agent.hasArrow,
+                      onShootArrow: () {
+                        setState(() {
+                          _gameController.shootArrow();
+                        });
+                      },
+                      onAutoSolve: _autoSolveWumpusWorld,
+                      onNewGame: () {
+                        setState(() {
+                          _gameController.initializeGame();
+                        });
+                      },
+                      onRestart: () {
+                        setState(() {
+                          _gameController.initializeGame();
+                        });
+                      },
+                    ),
+                    // Main game grid
+                    Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          children: [
+                            Expanded(
+                              child: GameGrid(
+                                grid: _gameController.grid,
+                                agent: _gameController.agent,
+                                isNeighbor: _gameController.isNeighbor,
+                                cellAnimations: _cellAnimations,
+                              ),
+                            ),
+                            GameControls(
+                              isGameOver: _gameController.isGameOver,
+                              autoMoveEnabled: _gameController.autoMoveEnabled,
+                              onMove: (direction) {
+                                setState(() {
+                                  _gameController.move(direction);
+                                });
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            content,
-            style: TextStyle(
-              fontSize: 14,
-              height: 1.6,
-              color: Colors.white.withOpacity(0.9),
-              letterSpacing: 0.3,
-            ),
-          ),
-        ],
+        ),
       ),
     );
+  }
+
+  String _formatDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    final hours = twoDigits(duration.inHours);
+    final minutes = twoDigits(duration.inMinutes.remainder(60));
+    final seconds = twoDigits(duration.inSeconds.remainder(60));
+    return '$hours:$minutes:$seconds';
   }
 }
