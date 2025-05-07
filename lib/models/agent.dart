@@ -20,7 +20,7 @@ class Agent {
   static const int WIN_BONUS = 500;
 
   // Move the agent based on the current direction
-  void move(Direction dir) {
+  void move(Direction dir, {int maxX = 3, int maxY = 3}) {
     if (!isAlive) return;
     
     direction = dir;
@@ -29,13 +29,13 @@ class Agent {
         if (y > 0) y--;
         break;
       case Direction.down:
-        if (y < 3) y++;
+        if (y < maxY) y++;
         break;
       case Direction.left:
         if (x > 0) x--;
         break;
       case Direction.right:
-        if (x < 3) x++;
+        if (x < maxX) x++;
         break;
     }
     
@@ -63,12 +63,12 @@ class Agent {
   }
 
   // Get the neighboring cells around the agent
-  List<List<int>> neighbors(int x, int y) {
+  List<List<int>> neighbors(int x, int y, {int maxX = 3, int maxY = 3}) {
     return [
       if (y > 0) [x, y - 1],
-      if (y < 3) [x, y + 1],
+      if (y < maxY) [x, y + 1],
       if (x > 0) [x - 1, y],
-      if (x < 3) [x + 1, y],
+      if (x < maxX) [x + 1, y],
     ];
   }
 
@@ -103,7 +103,7 @@ class Agent {
   }
 
   // Check if the agent can climb out
-  bool canClimbOut() {
+  bool canClimbOut({int maxX = 3, int maxY = 3}) {
     return x == 0 && y == 0 && hasGold;
   }
 
