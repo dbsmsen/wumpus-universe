@@ -6,7 +6,7 @@ import '../models/grid.dart';
 class GameGrid extends StatefulWidget {
   final Grid grid;
   final Agent agent;
-  final bool Function(int x, int y) isNeighbor;
+  final bool Function(int, int) isNeighbor;
   final Map<String, AnimationController> cellAnimations;
 
   const GameGrid({
@@ -23,13 +23,24 @@ class GameGrid extends StatefulWidget {
 
 class _GameGridState extends State<GameGrid> with TickerProviderStateMixin {
   @override
+  void dispose() {
+    // Dispose all animation controllers
+    widget.cellAnimations.values.forEach((controller) {
+      controller.dispose();
+    });
+    widget.cellAnimations.clear();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return GridView.builder(
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: widget.grid.columns,
+        childAspectRatio: 1.0,
       ),
       itemCount: widget.grid.rows * widget.grid.columns,
-      itemBuilder: (_, index) {
+      itemBuilder: (context, index) {
         final x = index % widget.grid.columns;
         final y = index ~/ widget.grid.columns;
         return _buildCell(x, y);
@@ -40,7 +51,10 @@ class _GameGridState extends State<GameGrid> with TickerProviderStateMixin {
   Widget _buildCell(int x, int y) {
     final cell = widget.grid.cells[y][x];
     final isAgentHere = x == widget.agent.x && y == widget.agent.y;
-    final isVisible = widget.isNeighbor(x, y) || isAgentHere;
+    final isVisible = isAgentHere ||
+        cell.visited ||
+        widget.isNeighbor(x, y) ||
+        cell.isRevealed;
 
     return Container(
       margin: const EdgeInsets.all(2),
@@ -61,23 +75,24 @@ class _GameGridState extends State<GameGrid> with TickerProviderStateMixin {
             // Only show stench and breeze in neighboring cells
             if (!isAgentHere) ...[
               if (cell.stench)
-                _buildAnimatedImage('assets/images/stench.png', 'stench'),
+                _buildAnimatedImage('assets/images/stench.png', 'stench_$x$y'),
               if (cell.breeze)
-                _buildAnimatedImage('assets/images/breeze.png', 'breeze'),
+                _buildAnimatedImage('assets/images/breeze.png', 'breeze_$x$y'),
             ],
             // Only show hazards and gold when agent is on the cell
             if (isAgentHere) ...[
               if (cell.hasPit)
-                _buildAnimatedImage('assets/images/pit.png', 'pit'),
+                _buildAnimatedImage('assets/images/pit.png', 'pit_$x$y'),
               if (cell.hasWumpus && !cell.isWumpusDead)
-                _buildAnimatedImage('assets/images/wumpus.png', 'wumpus'),
+                _buildAnimatedImage('assets/images/wumpus.png', 'wumpus_$x$y'),
               if (cell.hasWumpus && cell.isWumpusDead)
                 _buildAnimatedImage(
-                    'assets/images/wumpus_dead.png', 'wumpus_dead'),
+                    'assets/images/wumpus_dead.png', 'wumpus_dead_$x$y'),
               if (cell.hasGold)
-                _buildAnimatedImage('assets/images/gold.png', 'gold'),
+                _buildAnimatedImage('assets/images/gold.png', 'gold_$x$y'),
               if (cell.glitter)
-                _buildAnimatedImage('assets/images/glitter.png', 'glitter'),
+                _buildAnimatedImage(
+                    'assets/images/glitter.png', 'glitter_$x$y'),
             ],
           ],
           if (isAgentHere) _buildAnimatedAgent(),
@@ -104,9 +119,20 @@ class _GameGridState extends State<GameGrid> with TickerProviderStateMixin {
   }
 
   Widget _buildAnimatedAgent() {
-    return Image.asset(
-      'assets/images/agent.png',
-      fit: BoxFit.contain,
+    const agentKey = 'agent';
+    if (!widget.cellAnimations.containsKey(agentKey)) {
+      widget.cellAnimations[agentKey] = AnimationController(
+        duration: const Duration(milliseconds: 500),
+        vsync: this,
+      )..repeat(reverse: true);
+    }
+
+    return FadeTransition(
+      opacity: widget.cellAnimations[agentKey]!,
+      child: Image.asset(
+        'assets/images/agent.png',
+        fit: BoxFit.contain,
+      ),
     );
   }
 }
