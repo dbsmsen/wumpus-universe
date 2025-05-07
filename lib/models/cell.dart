@@ -17,6 +17,7 @@ class Cell {
   bool safe = false;
   bool isWumpusDead = false;
   bool isWall = false;  // New property for wall cells
+  bool isRevealed = false;  // New property for revealed cells
   CellType cellType = CellType.empty;
 
   Cell({required this.x, required this.y});
