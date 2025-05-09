@@ -124,6 +124,129 @@ class _GridSelectionScreenState extends State<GridSelectionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: Drawer(
+        child: Container(
+          decoration: const BoxDecoration(
+            image: DecorationImage(
+              image: AssetImage('assets/images/grid_background.png'),
+              fit: BoxFit.cover,
+            ),
+          ),
+          child: ListView(
+            padding: EdgeInsets.zero,
+            children: [
+              DrawerHeader(
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.8),
+                ),
+                child: const Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Wumpus Universe',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'Game Settings & Options',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.school, color: Colors.blue),
+                title: const Text('Tutorial'),
+                subtitle: const Text('Learn how to play'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showTutorialDialog(context);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.music_note, color: Colors.purple),
+                title: const Text('Sounds'),
+                subtitle: const Text('Audio settings'),
+                onTap: () {
+                  Navigator.pop(context);
+                  showSoundsDialog(context);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.settings, color: Colors.teal),
+                title: const Text('App Settings'),
+                subtitle: const Text('Manage preferences'),
+                onTap: () {
+                  Navigator.pop(context);
+                  showAppSettingsDialog(context);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.leaderboard, color: Colors.amber),
+                title: const Text('Leaderboard'),
+                subtitle: const Text('Top players'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const LeaderboardScreen(),
+                    ),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.rule, color: Colors.green),
+                title: const Text('Rules'),
+                subtitle: const Text('Game rules'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showRulesDialog(context);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.palette, color: Colors.purple),
+                title: const Text('Theme'),
+                subtitle: const Text('Customize appearance'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showThemeDialog(context);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.info, color: Colors.teal),
+                title: const Text('About'),
+                subtitle: const Text('About the game'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showAboutDialog(context);
+                },
+              ),
+              const Divider(),
+              ListTile(
+                leading: const Icon(Icons.logout, color: Colors.red),
+                title: const Text('Logout'),
+                subtitle: const Text('Sign out'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showLogoutDialog(context);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+      appBar: AppBar(
+        title: const Text('Select Grid Size'),
+        backgroundColor: Colors.blue.withOpacity(0.8),
+      ),
       body: Container(
         decoration: const BoxDecoration(
           image: DecorationImage(
@@ -132,238 +255,140 @@ class _GridSelectionScreenState extends State<GridSelectionScreen> {
           ),
         ),
         child: SafeArea(
-          child: Row(
-            children: [
-              // Left sidebar with game info
-              Container(
-                width: 250,
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-
-                    // Scrollable sections
-                    Expanded(
-                      child: SingleChildScrollView(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            SectionCard(
-                              title: 'Tutorial',
-                              content:
-                                  'Learn how to play the game and master the art of hunting the Wumpus.',
-                              icon: Icons.school,
-                              accentColor: Colors.blue,
-                              onTap: () => _showTutorialDialog(context),
-                            ),
-                            SectionCard(
-                              title: 'Sounds',
-                              content:
-                                  'Customize game audio and volume settings.',
-                              icon: Icons.music_note,
-                              accentColor: Colors.purple,
-                              onTap: () => showSoundsDialog(context),
-                            ),
-                            SectionCard(
-                              title: 'App Settings',
-                              content:
-                                  'Manage app preferences and appearance.',
-                              icon: Icons.settings,
-                              accentColor: Colors.teal,
-                              onTap: () => showAppSettingsDialog(context),
-                            ),
-                            SectionCard(
-                              title: 'Leaderboard',
-                              content:
-                                  'Check out the top players and their achievements.',
-                              icon: Icons.leaderboard,
-                              accentColor: Colors.amber,
-                              onTap: () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      const LeaderboardScreen(),
-                                ),
-                              ),
-                            ),
-                            SectionCard(
-                              title: 'Rules',
-                              content:
-                                  'Learn about the game rules and scoring system.',
-                              icon: Icons.rule,
-                              accentColor: Colors.green,
-                              onTap: () => _showRulesDialog(context),
-                            ),
-                            SectionCard(
-                              title: 'Theme',
-                              content:
-                                  'Customize the game appearance and colors.',
-                              icon: Icons.palette,
-                              accentColor: Colors.purple,
-                              onTap: () => _showThemeDialog(context),
-                            ),
-                            SectionCard(
-                              title: 'About',
-                              content:
-                                  'Learn more about Wumpus Universe and its creators.',
-                              icon: Icons.info,
-                              accentColor: Colors.teal,
-                              onTap: () => _showAboutDialog(context),
-                            ),
-                            SectionCard(
-                              title: 'Logout',
-                              content:
-                                  'Sign out and return to the login screen.',
-                              icon: Icons.logout,
-                              accentColor: Colors.red,
-                              onTap: () => _showLogoutDialog(context),
-                            ),
-                          ],
+          child: Center(
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.3),
+                      width: 1,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        'Choose Your Game Grid',
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          letterSpacing: 1.2,
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              // Main content
-              Expanded(
-                child: Center(
-                  child: SingleChildScrollView(
-                    child: Padding(
-                      padding: const EdgeInsets.all(20.0),
-                      child: Container(
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.3),
-                            width: 1,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
+                      const Text(
+                        'Predefined Grids',
+                        style: TextStyle(
+                          fontSize: 20,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w500,
                         ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Text(
-                              'Choose Your Game Grid',
-                              style: TextStyle(
-                                fontSize: 28,
+                      ),
+                      const SizedBox(height: 16),
+                      Wrap(
+                        spacing: 12,
+                        runSpacing: 12,
+                        alignment: WrapAlignment.center,
+                        children: predefinedGrids.map((grid) {
+                          return ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.amber[700],
+                              foregroundColor: Colors.black,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 16,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              elevation: 4,
+                            ),
+                            onPressed: () => _startGame(grid[0], grid[1]),
+                            child: Text(
+                              '${grid[0]} x ${grid[1]}',
+                              style: const TextStyle(
+                                fontSize: 18,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                                letterSpacing: 1.2,
                               ),
                             ),
-                            const Text(
-                              'Predefined Grids',
-                              style: TextStyle(
-                                fontSize: 20,
-                                color: Colors.white,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            Wrap(
-                              spacing: 12,
-                              runSpacing: 12,
-                              alignment: WrapAlignment.center,
-                              children: predefinedGrids.map((grid) {
-                                return ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.amber[700],
-                                    foregroundColor: Colors.black,
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 24,
-                                      vertical: 16,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    elevation: 4,
-                                  ),
-                                  onPressed: () => _startGame(grid[0], grid[1]),
-                                  child: Text(
-                                    '${grid[0]} x ${grid[1]}',
-                                    style: const TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                );
-                              }).toList(),
-                            ),
-                            const SizedBox(height: 40),
-                            const Text(
-                              'Custom Grid',
-                              style: TextStyle(
-                                fontSize: 20,
-                                color: Colors.white,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.amber[700],
-                                foregroundColor: Colors.black,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 24,
-                                  vertical: 16,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                elevation: 4,
-                              ),
-                              onPressed: _showCustomGridDialog,
-                              child: Text(
-                                'Custom (${customGridSize[0]} x ${customGridSize[1]})',
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 40),
-                            ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.green[700],
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 32,
-                                  vertical: 20,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                elevation: 4,
-                              ),
-                              onPressed: () => _startGame(
-                                customGridSize[0],
-                                customGridSize[1],
-                              ),
-                              child: const Text(
-                                'Start Game with Selected Grid',
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ],
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 40),
+                      const Text(
+                        'Custom Grid',
+                        style: TextStyle(
+                          fontSize: 20,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
-                    ),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.amber[700],
+                          foregroundColor: Colors.black,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 16,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 4,
+                        ),
+                        onPressed: _showCustomGridDialog,
+                        child: Text(
+                          'Custom (${customGridSize[0]} x ${customGridSize[1]})',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 40),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green[700],
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 32,
+                            vertical: 20,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 4,
+                        ),
+                        onPressed: () => _startGame(
+                          customGridSize[0],
+                          customGridSize[1],
+                        ),
+                        child: const Text(
+                          'Start Game with Selected Grid',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-            ],
+            ),
           ),
         ),
       ),
