@@ -34,16 +34,44 @@ class _GameGridState extends State<GameGrid> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    return GridView.builder(
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: widget.grid.columns,
-        childAspectRatio: 1.0,
-      ),
-      itemCount: widget.grid.rows * widget.grid.columns,
-      itemBuilder: (context, index) {
-        final x = index % widget.grid.columns;
-        final y = index ~/ widget.grid.columns;
-        return _buildCell(x, y);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Calculate the maximum possible cell size based on available space
+        final maxWidth = constraints.maxWidth;
+        final maxHeight = constraints.maxHeight;
+
+        // Calculate cell size based on grid dimensions and available space
+        final cellWidth = maxWidth / widget.grid.columns;
+        final cellHeight = maxHeight / widget.grid.rows;
+
+        // Use the smaller of the two to maintain square cells
+        final cellSize = cellWidth < cellHeight ? cellWidth : cellHeight;
+
+        // Calculate the total grid size
+        final gridWidth = cellSize * widget.grid.columns;
+        final gridHeight = cellSize * widget.grid.rows;
+
+        return Center(
+          child: SizedBox(
+            width: gridWidth,
+            height: gridHeight,
+            child: GridView.builder(
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: widget.grid.columns,
+                childAspectRatio: 1.0,
+                mainAxisSpacing: 1,
+                crossAxisSpacing: 1,
+              ),
+              itemCount: widget.grid.rows * widget.grid.columns,
+              itemBuilder: (context, index) {
+                final x = index % widget.grid.columns;
+                final y = index ~/ widget.grid.columns;
+                return _buildCell(x, y);
+              },
+            ),
+          ),
+        );
       },
     );
   }
@@ -57,19 +85,19 @@ class _GameGridState extends State<GameGrid> with TickerProviderStateMixin {
         cell.isRevealed;
 
     return Container(
-      margin: const EdgeInsets.all(2),
       decoration: BoxDecoration(
         color: isVisible ? Colors.white : Colors.grey.shade300,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(4),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
-            blurRadius: 4,
-            spreadRadius: 1,
+            blurRadius: 2,
+            spreadRadius: 0,
           ),
         ],
       ),
       child: Stack(
+        fit: StackFit.expand,
         children: [
           if (isVisible) ...[
             // Only show stench and breeze in neighboring cells
@@ -111,9 +139,12 @@ class _GameGridState extends State<GameGrid> with TickerProviderStateMixin {
 
     return FadeTransition(
       opacity: widget.cellAnimations[key]!,
-      child: Image.asset(
-        imagePath,
-        fit: BoxFit.contain,
+      child: Padding(
+        padding: const EdgeInsets.all(2.0),
+        child: Image.asset(
+          imagePath,
+          fit: BoxFit.contain,
+        ),
       ),
     );
   }
@@ -129,9 +160,12 @@ class _GameGridState extends State<GameGrid> with TickerProviderStateMixin {
 
     return FadeTransition(
       opacity: widget.cellAnimations[agentKey]!,
-      child: Image.asset(
-        'assets/images/agent.png',
-        fit: BoxFit.contain,
+      child: Padding(
+        padding: const EdgeInsets.all(2.0),
+        child: Image.asset(
+          'assets/images/agent.png',
+          fit: BoxFit.contain,
+        ),
       ),
     );
   }
