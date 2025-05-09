@@ -8,20 +8,28 @@ class GlassmorphicCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.3),
+        color: Colors.white.withOpacity(0.15),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.deepPurple.withOpacity(0.1),
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 30,
+            spreadRadius: 5,
+            offset: const Offset(0, 10),
+          ),
+          BoxShadow(
+            color: Colors.white.withOpacity(0.1),
             blurRadius: 20,
             spreadRadius: 2,
+            offset: const Offset(0, -5),
           ),
         ],
         border: Border.all(
           color: Colors.white.withOpacity(0.2),
+          width: 1.5,
         ),
       ),
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(32),
       child: child,
     );
   }
