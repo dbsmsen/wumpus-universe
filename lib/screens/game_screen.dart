@@ -10,6 +10,15 @@ import '../controllers/game_controller.dart';
 import '../widgets/game_grid.dart';
 import '../widgets/game_controls.dart';
 import '../widgets/game_info_panel.dart';
+import '../widgets/about_dialog.dart';
+import '../widgets/logout_dialog.dart';
+import '../widgets/rules_dialog.dart';
+import '../widgets/theme_dialog.dart';
+import '../widgets/tutorial_dialog.dart';
+import '../widgets/sounds_dialog.dart';
+import '../widgets/app_settings_dialog.dart';
+import '../screens/leaderboard_screen.dart';
+import '../widgets/game_actions.dart';
 
 class GameScreen extends StatefulWidget {
   final int rows;
@@ -24,16 +33,30 @@ class GameScreen extends StatefulWidget {
 class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   late GameController _gameController;
   Map<String, AnimationController> _cellAnimations = {};
+  Timer? _gameTimer;
+  Duration _gameDuration = Duration.zero;
 
   @override
   void initState() {
     super.initState();
     _gameController =
         GameController(rows: widget.rows, columns: widget.columns);
+    _startGameTimer();
+  }
+
+  void _startGameTimer() {
+    _gameTimer?.cancel();
+    _gameDuration = Duration.zero;
+    _gameTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      setState(() {
+        _gameDuration += const Duration(seconds: 1);
+      });
+    });
   }
 
   @override
   void dispose() {
+    _gameTimer?.cancel();
     _gameController.dispose();
     _cellAnimations.forEach((key, controller) {
       controller.dispose();
@@ -126,6 +149,48 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: Drawer(
+        child: Container(
+          decoration: const BoxDecoration(
+            image: DecorationImage(
+              image: AssetImage('assets/images/grid_background.png'),
+              fit: BoxFit.cover,
+            ),
+          ),
+          child: GameInfoPanel(
+            agent: _gameController.agent,
+            gameMessage: _gameController.gameMessage,
+            gameDuration: _gameDuration,
+            hasWon: _gameController.agent.hasWon,
+            isGameOver: _gameController.isGameOver,
+            autoMoveEnabled: _gameController.autoMoveEnabled,
+            hasArrow: _gameController.agent.hasArrow,
+            onShootArrow: () {
+              setState(() {
+                _gameController.shootArrow();
+              });
+            },
+            onAutoSolve: _autoSolveWumpusWorld,
+            onNewGame: () {
+              setState(() {
+                _gameController.initializeGame();
+                _startGameTimer();
+              });
+            },
+            onRestart: () {
+              setState(() {
+                _gameController.initializeGame();
+                _startGameTimer();
+              });
+            },
+          ),
+        ),
+      ),
+      appBar: AppBar(
+        title: const Text('Wumpus World Game'),
+        backgroundColor: Colors.deepPurple.withOpacity(0.8),
+        elevation: 0,
+      ),
       extendBodyBehindAppBar: true,
       body: Container(
         decoration: BoxDecoration(
@@ -141,99 +206,123 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         child: SafeArea(
           child: Column(
             children: [
-              // Game Duration Section
-              Container(
-                width: double.infinity,
-                padding:
-                    const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.1),
-                  borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(20),
-                    bottomRight: Radius.circular(20),
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.timer,
-                      color: Colors.white,
-                      size: 24,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Game Duration: ${_formatDuration(_gameController.gameDuration)}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
               Expanded(
-                child: Row(
-                  children: [
-                    // Left sidebar with game info
-                    GameInfoPanel(
-                      agent: _gameController.agent,
-                      gameMessage: _gameController.gameMessage,
-                      gameDuration: _gameController.gameDuration,
-                      hasWon: _gameController.agent.hasWon,
-                      isGameOver: _gameController.isGameOver,
-                      autoMoveEnabled: _gameController.autoMoveEnabled,
-                      hasArrow: _gameController.agent.hasArrow,
-                      onShootArrow: () {
-                        setState(() {
-                          _gameController.shootArrow();
-                        });
-                      },
-                      onAutoSolve: _autoSolveWumpusWorld,
-                      onNewGame: () {
-                        setState(() {
-                          _gameController.initializeGame();
-                        });
-                      },
-                      onRestart: () {
-                        setState(() {
-                          _gameController.initializeGame();
-                        });
-                      },
-                    ),
-                    // Main game grid
-                    Expanded(
-                      child: Container(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 8, horizontal: 16),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(20),
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.3),
+                            width: 1,
+                          ),
                         ),
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Expanded(
-                              child: GameGrid(
-                                grid: _gameController.grid,
-                                agent: _gameController.agent,
-                                isNeighbor: _gameController.isNeighbor,
-                                cellAnimations: _cellAnimations,
-                              ),
+                            Icon(
+                              Icons.timer,
+                              color: Colors.white,
+                              size: 20,
                             ),
-                            GameControls(
-                              isGameOver: _gameController.isGameOver,
-                              autoMoveEnabled: _gameController.autoMoveEnabled,
-                              onMove: (direction) {
-                                setState(() {
-                                  _gameController.move(direction);
-                                });
-                              },
+                            const SizedBox(width: 8),
+                            Text(
+                              'Game Duration: ${_formatDuration(_gameDuration)}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ],
                         ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 8, horizontal: 16),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.3),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.score,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Score: ${_gameController.agent.score} | Moves: ${_gameController.agent.moves}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Expanded(
+                        child: GameGrid(
+                          grid: _gameController.grid,
+                          agent: _gameController.agent,
+                          isNeighbor: _gameController.isNeighbor,
+                          cellAnimations: _cellAnimations,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      GameActions(
+                        isGameOver: _gameController.isGameOver,
+                        autoMoveEnabled: _gameController.autoMoveEnabled,
+                        hasArrow: _gameController.agent.hasArrow,
+                        onShootArrow: () {
+                          setState(() {
+                            _gameController.shootArrow();
+                          });
+                        },
+                        onAutoSolve: _autoSolveWumpusWorld,
+                        onNewGame: () {
+                          setState(() {
+                            _gameController.initializeGame();
+                            _startGameTimer();
+                          });
+                        },
+                        onRestart: () {
+                          setState(() {
+                            _gameController.initializeGame();
+                            _startGameTimer();
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      GameControls(
+                        isGameOver: _gameController.isGameOver,
+                        autoMoveEnabled: _gameController.autoMoveEnabled,
+                        onMove: (direction) {
+                          setState(() {
+                            _gameController.move(direction);
+                          });
+                        },
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -249,5 +338,40 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     final minutes = twoDigits(duration.inMinutes.remainder(60));
     final seconds = twoDigits(duration.inSeconds.remainder(60));
     return '$hours:$minutes:$seconds';
+  }
+
+  void _showTutorialDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => const TutorialDialog(),
+    );
+  }
+
+  void _showRulesDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => const RulesDialog(),
+    );
+  }
+
+  void _showThemeDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => const ThemeDialog(),
+    );
+  }
+
+  void _showAboutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => const GameAboutDialog(),
+    );
+  }
+
+  void _showLogoutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => const LogoutDialog(),
+    );
   }
 }
