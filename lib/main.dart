@@ -11,9 +11,20 @@ import 'firebase_options.dart'; // import the generated file
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } catch (e) {
+    if (e.toString().contains('already exists')) {
+      // Firebase is already initialized, we can proceed
+      print('Firebase already initialized');
+    } else {
+      // Some other error occurred
+      print('Error initializing Firebase: $e');
+      rethrow;
+    }
+  }
   runApp(const MyApp());
 }
 
