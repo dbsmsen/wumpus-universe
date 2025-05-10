@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../widgets/auth_shared_widget.dart';
+import '../widgets/floating_background.dart';
 import 'initial_onboarding_screen.dart';
 import 'register_screen.dart';
 import 'package:flutter/services.dart';
@@ -136,6 +137,8 @@ class _LoginScreenState extends State<LoginScreen>
           ),
           child: Stack(
             children: [
+              // Add floating background
+              const FloatingBackground(),
               // Background animated circles
               Positioned(
                 top: -100,
@@ -192,7 +195,7 @@ class _LoginScreenState extends State<LoginScreen>
                                           ),
                                         ],
                                       ),
-                                      child: Icon(
+                                      child: const Icon(
                                         Icons.explore_rounded,
                                         size: 100,
                                         color: Colors.white,
@@ -256,7 +259,7 @@ class _LoginScreenState extends State<LoginScreen>
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(16),
-                                  borderSide: BorderSide(
+                                  borderSide: const BorderSide(
                                     color: Colors.white,
                                     width: 2,
                                   ),
@@ -290,7 +293,7 @@ class _LoginScreenState extends State<LoginScreen>
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(16),
-                                  borderSide: BorderSide(
+                                  borderSide: const BorderSide(
                                     color: Colors.white,
                                     width: 2,
                                   ),
