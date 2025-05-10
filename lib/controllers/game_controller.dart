@@ -4,6 +4,8 @@ import '../models/agent.dart';
 import '../models/cell.dart';
 import '../models/direction.dart' as dir;
 import '../models/grid.dart';
+import '../models/game_mode.dart';
+import '../models/difficulty_level.dart';
 
 class GameController {
   late Agent agent;
@@ -16,8 +18,15 @@ class GameController {
   bool isGameRunning = false;
   final int rows;
   final int columns;
+  final GameMode gameMode;
+  final DifficultyLevel difficultyLevel;
 
-  GameController({required this.rows, required this.columns}) {
+  GameController({
+    required this.rows,
+    required this.columns,
+    required this.gameMode,
+    required this.difficultyLevel,
+  }) {
     initializeGame();
   }
 
@@ -35,14 +44,26 @@ class GameController {
     grid = Grid(rows, columns);
     agent = Agent();
 
-    // Randomize game elements
-    grid.placePits();
-    grid.placeWumpus();
-    grid.placeGold();
+    // Configure game based on difficulty level and game mode
+    final difficultySettings = difficultyLevel.settings;
+    final gameModeSettings = gameMode.settings;
+
+    // Use game mode settings for counts, fallback to difficulty settings if not specified
+    final wumpusCount = gameModeSettings['wumpusCount'] as int? ??
+        difficultySettings['wumpusCount'] as int;
+    final pitCount = gameModeSettings['pitCount'] as int? ??
+        difficultySettings['pitCount'] as int;
+    final goldCount = gameModeSettings['goldCount'] as int? ?? 1;
+
+    grid.placePits(count: pitCount);
+    grid.placeWumpus(count: wumpusCount);
+    grid.placeGold(count: goldCount);
     grid.placeAgent(agent);
 
-    // Reset agent state
+    // Configure agent based on difficulty level
     agent.reset();
+    agent.hintFrequency = difficultySettings['hintFrequency'] as double;
+    agent.aggressiveness = difficultySettings['wumpusAggressiveness'] as double;
 
     // Start game timer
     startGameTimer();
@@ -63,7 +84,7 @@ class GameController {
   }
 
   void move(dir.Direction direction) {
-    if (isGameOver || autoMoveEnabled) return;
+    if (isGameOver) return; // Only check for game over
 
     // Check if move is valid within grid boundaries
     int newX = agent.x;
