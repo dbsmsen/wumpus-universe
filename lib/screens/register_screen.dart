@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../widgets/auth_shared_widget.dart';
+import '../widgets/floating_background.dart';
 import 'initial_onboarding_screen.dart';
 import 'package:flutter/services.dart';
 import 'grid_selection_screen.dart';
@@ -92,7 +93,7 @@ class _RegisterScreenState extends State<RegisterScreen>
 
   @override
   Widget build(BuildContext context) {
-    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.light,
     ));
@@ -100,6 +101,8 @@ class _RegisterScreenState extends State<RegisterScreen>
     return Scaffold(
       body: SafeArea(
         child: Container(
+          width: double.infinity,
+          height: double.infinity,
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
@@ -115,6 +118,8 @@ class _RegisterScreenState extends State<RegisterScreen>
           ),
           child: Stack(
             children: [
+              // Add floating background
+              const FloatingBackground(),
               // Background animated circles
               Positioned(
                 top: -100,
@@ -185,7 +190,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                                           ),
                                         ],
                                       ),
-                                      child: Icon(
+                                      child: const Icon(
                                         Icons.explore_outlined,
                                         size: 100,
                                         color: Colors.white,
@@ -248,7 +253,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(16),
-                                  borderSide: BorderSide(
+                                  borderSide: const BorderSide(
                                     color: Colors.white,
                                     width: 2,
                                   ),
@@ -281,7 +286,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(16),
-                                  borderSide: BorderSide(
+                                  borderSide: const BorderSide(
                                     color: Colors.white,
                                     width: 2,
                                   ),
@@ -314,7 +319,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(16),
-                                  borderSide: BorderSide(
+                                  borderSide: const BorderSide(
                                     color: Colors.white,
                                     width: 2,
                                   ),
@@ -326,7 +331,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                               onPressed: _register,
                               text: 'Create Account',
                               icon: Icons.app_registration_rounded,
-                              color: const Color(0xFF6D4C41), // Brown 600
+                              color: const Color(0xFF6D4C41),
                             ),
                           ],
                         ),
