@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:firebase_core/firebase_core.dart';
 import '../widgets/auth_shared_widget.dart';
 import '../widgets/floating_background.dart';
 import 'initial_onboarding_screen.dart';
 import 'register_screen.dart';
 import 'package:flutter/services.dart';
 import 'grid_selection_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -25,40 +27,245 @@ class _LoginScreenState extends State<LoginScreen>
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
+  Future<void> _showLoadingDialog(String message) async {
+    if (!mounted) return;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return WillPopScope(
+          onWillPop: () async => false,
+          child: AlertDialog(
+            backgroundColor: const Color(0xFF2C1810),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  message,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Please wait while we process your request...',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 14,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   void _login() async {
     try {
+      print('Attempting email/password login...');
+      if (_usernameController.text.isEmpty ||
+          _passwordController.text.isEmpty) {
+        _showError('Please enter both username and password');
+        return;
+      }
+
+      await _showLoadingDialog('Signing In...');
+
+      final email = "${_usernameController.text}@example.com";
+      print('Attempting login with email: $email');
+
       final userCredential = await _auth.signInWithEmailAndPassword(
-        email: "${_usernameController.text}@example.com",
+        email: email,
         password: _passwordController.text,
       );
-      _navigateToGridSelection();
+
+      if (userCredential.user != null) {
+        print('Login successful for user: ${userCredential.user!.uid}');
+
+        // Navigate immediately after successful authentication
+        if (mounted && Navigator.canPop(context)) {
+          Navigator.of(context).pop(); // Close loading dialog
+          _navigateToGridSelection();
+        }
+
+        // Update Firestore in the background
+        print('Updating Firestore in background...');
+        FirebaseFirestore.instance
+            .collection('users')
+            .doc(userCredential.user!.uid)
+            .set({
+          'email': email,
+          'username': _usernameController.text,
+          'lastLogin': FieldValue.serverTimestamp(),
+          'createdAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true)).then((_) {
+          print('User data successfully stored in Firestore');
+        }).catchError((error) {
+          print('Error storing user data in Firestore: $error');
+          // Don't show error to user since this is a background operation
+        });
+      }
     } catch (e) {
-      _showError('Login failed. Please check credentials.');
+      print('Login error: $e');
+      if (mounted && Navigator.canPop(context)) {
+        Navigator.of(context).pop(); // Close loading dialog
+        String errorMessage = 'Login failed. ';
+        if (e is FirebaseAuthException) {
+          switch (e.code) {
+            case 'user-not-found':
+              errorMessage += 'No user found with this email.';
+              break;
+            case 'wrong-password':
+              errorMessage += 'Wrong password provided.';
+              break;
+            case 'invalid-email':
+              errorMessage += 'Invalid email address.';
+              break;
+            case 'user-disabled':
+              errorMessage += 'This user account has been disabled.';
+              break;
+            default:
+              errorMessage += e.message ?? 'Unknown error occurred.';
+          }
+        } else {
+          errorMessage += e.toString();
+        }
+        _showError(errorMessage);
+      }
     }
   }
 
   void _signInWithGoogle() async {
     try {
-      final googleUser = await GoogleSignIn().signIn();
-      if (googleUser == null) return;
-      final googleAuth = await googleUser.authentication;
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-      await _auth.signInWithCredential(credential);
-      _navigateToGridSelection();
+      print('Starting Google Sign In process...');
+
+      if (!Firebase.apps.isNotEmpty) {
+        print('Firebase not initialized!');
+        _showError('Firebase not initialized. Please restart the app.');
+        return;
+      }
+
+      // Show loading dialog immediately
+      await _showLoadingDialog('Signing in with Google...');
+
+      final GoogleAuthProvider googleProvider = GoogleAuthProvider();
+      googleProvider.addScope('email');
+      googleProvider.addScope('profile');
+
+      print('Initiating Google Sign In popup...');
+      final UserCredential userCredential =
+          await _auth.signInWithPopup(googleProvider);
+      final User? user = userCredential.user;
+
+      if (user != null) {
+        print('Firebase authentication successful for user: ${user.uid}');
+
+        // Navigate immediately after successful authentication
+        if (mounted && Navigator.canPop(context)) {
+          Navigator.of(context).pop(); // Close loading dialog
+          _navigateToGridSelection();
+        }
+
+        // Update Firestore in the background
+        print('Updating Firestore in background...');
+        FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+          'email': user.email,
+          'displayName': user.displayName,
+          'photoURL': user.photoURL,
+          'lastLogin': FieldValue.serverTimestamp(),
+          'createdAt': FieldValue.serverTimestamp(),
+          'provider': 'google',
+        }, SetOptions(merge: true)).then((_) {
+          print('User data successfully stored in Firestore');
+        }).catchError((error) {
+          print('Error storing user data in Firestore: $error');
+          // Don't show error to user since this is a background operation
+        });
+      } else {
+        if (mounted && Navigator.canPop(context)) {
+          Navigator.of(context).pop(); // Close loading dialog
+          print('Firebase authentication succeeded but user object is null');
+          _showError('Failed to get user information after Google sign-in');
+        }
+      }
     } catch (e) {
-      _showError('Google sign-in failed.');
+      print('Google Sign In error: $e');
+      if (mounted && Navigator.canPop(context)) {
+        Navigator.of(context).pop(); // Close loading dialog
+        String errorMessage = 'Google sign-in failed: ';
+        if (e is FirebaseAuthException) {
+          switch (e.code) {
+            case 'account-exists-with-different-credential':
+              errorMessage +=
+                  'An account already exists with the same email address but different sign-in credentials.';
+              break;
+            case 'invalid-credential':
+              errorMessage += 'The credential is invalid or has expired.';
+              break;
+            case 'operation-not-allowed':
+              errorMessage += 'Google sign-in is not enabled.';
+              break;
+            case 'user-disabled':
+              errorMessage += 'This user account has been disabled.';
+              break;
+            case 'user-not-found':
+              errorMessage += 'No user found with this email.';
+              break;
+            case 'wrong-password':
+              errorMessage += 'Wrong password provided.';
+              break;
+            case 'invalid-verification-code':
+              errorMessage += 'The verification code is invalid.';
+              break;
+            case 'invalid-verification-id':
+              errorMessage += 'The verification ID is invalid.';
+              break;
+            case 'popup-closed-by-user':
+              errorMessage +=
+                  'Sign-in popup was closed before completing the sign-in.';
+              break;
+            case 'popup-blocked':
+              errorMessage += 'Sign-in popup was blocked by the browser.';
+              break;
+            default:
+              errorMessage += e.message ?? 'Unknown error occurred.';
+          }
+        } else {
+          errorMessage += e.toString();
+        }
+        _showError(errorMessage);
+      }
     }
   }
 
   void _signInAsGuest() async {
     try {
+      await _showLoadingDialog('Signing in as Guest...');
+
       await _auth.signInAnonymously();
-      _navigateToGridSelection();
+
+      if (mounted && Navigator.canPop(context)) {
+        Navigator.of(context).pop(); // Close loading dialog
+        _navigateToGridSelection();
+      }
     } catch (e) {
-      _showError('Guest sign-in failed.');
+      if (mounted && Navigator.canPop(context)) {
+        Navigator.of(context).pop(); // Close loading dialog
+        _showError('Guest sign-in failed.');
+      }
     }
   }
 
@@ -306,7 +513,10 @@ class _LoginScreenState extends State<LoginScreen>
                               onPressed: _login,
                               text: 'Login',
                               icon: Icons.login_rounded,
-                              color: Colors.white,
+                              color:
+                                  const Color(0xFFC4A50D), // Dark yellow color
+                              textColor:
+                                  Colors.white, // Blue text color
                             ),
                             const SizedBox(height: 24),
                             // Alternative Login Options
@@ -327,8 +537,15 @@ class _LoginScreenState extends State<LoginScreen>
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 16, vertical: 8),
                                   ),
-                                  icon: const Icon(Icons.person_add_rounded),
-                                  label: const Text('Register'),
+                                  icon: const Icon(Icons.person_add_rounded,
+                                      color: Colors.white),
+                                  label: const Text(
+                                    'Register Here',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                                 ),
                                 Container(
                                   width: 1,
@@ -355,9 +572,10 @@ class _LoginScreenState extends State<LoginScreen>
                             Center(
                               child: TextButton.icon(
                                 onPressed: _signInAsGuest,
-                                icon: const Icon(Icons.person_outline_rounded),
+                                icon: const Icon(Icons.person_outline_rounded,
+                                  color: Colors.white,),
                                 label: Text(
-                                  'Continue as Guest Explorer',
+                                  'Continue as s Guest',
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontSize: 16,
