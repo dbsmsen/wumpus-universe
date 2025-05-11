@@ -41,7 +41,8 @@ class _FloatingBackgroundState extends State<FloatingBackground>
       // Increased number of images
       final double baseSize =
           25 + _random.nextDouble() * 60; // More size variation
-      final double baseSpeed = 1.5 + _random.nextDouble() * 2.5;
+      final double baseSpeed =
+          0.8 + _random.nextDouble() * 1.2; // Reduced speed
       final double baseOpacity =
           0.1 + _random.nextDouble() * 0.3; // More opacity variation
 
@@ -53,13 +54,12 @@ class _FloatingBackgroundState extends State<FloatingBackground>
           startY: _random.nextDouble() * 1.2 -
               0.1, // Wider spread with negative values
           amplitude:
-              (50 + _random.nextDouble() * 100).toDouble(), // Larger amplitude
+              (20 + _random.nextDouble() * 40).toDouble(), // Reduced amplitude
           speed: baseSpeed,
           size: baseSize,
           opacity: baseOpacity,
-          rotationSpeed:
-              -3.0 + _random.nextDouble() * 6.0, // More dramatic rotation
-          scaleSpeed: 2.0 + _random.nextDouble() * 3.0, // More dramatic scaling
+          rotationSpeed: -1.5 + _random.nextDouble() * 3.0, // Reduced rotation
+          scaleSpeed: 1.0 + _random.nextDouble() * 1.5, // Reduced scaling
           movementPattern: _random.nextInt(5), // More movement patterns
           phaseOffset:
               _random.nextDouble() * 2 * math.pi, // Random phase offset
@@ -118,9 +118,9 @@ class _FloatingBackgroundState extends State<FloatingBackground>
 
             // Calculate rotation and scale with more dramatic effects
             final double rotation = progress * floatingImage.rotationSpeed;
-            final double scale = 0.6 +
+            final double scale = 0.8 +
                 math.sin(progress * floatingImage.scaleSpeed) *
-                    0.4; // More dramatic scaling
+                    0.2; // Reduced scaling effect
 
             // Add a subtle glow effect
             return Positioned(
