@@ -19,12 +19,22 @@ import '../widgets/sounds_dialog.dart';
 import '../widgets/app_settings_dialog.dart';
 import '../screens/leaderboard_screen.dart';
 import '../widgets/game_actions.dart';
+import '../models/game_mode.dart';
+import '../models/difficulty_level.dart';
 
 class GameScreen extends StatefulWidget {
   final int rows;
   final int columns;
+  final GameMode gameMode;
+  final DifficultyLevel difficultyLevel;
 
-  const GameScreen({super.key, required this.rows, required this.columns});
+  const GameScreen({
+    super.key,
+    required this.rows,
+    required this.columns,
+    required this.gameMode,
+    required this.difficultyLevel,
+  });
 
   @override
   State<GameScreen> createState() => _GameScreenState();
@@ -35,12 +45,17 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   Map<String, AnimationController> _cellAnimations = {};
   Timer? _gameTimer;
   Duration _gameDuration = Duration.zero;
+  WumpusAISolver? _aiSolver;
 
   @override
   void initState() {
     super.initState();
-    _gameController =
-        GameController(rows: widget.rows, columns: widget.columns);
+    _gameController = GameController(
+      rows: widget.rows,
+      columns: widget.columns,
+      gameMode: widget.gameMode,
+      difficultyLevel: widget.difficultyLevel,
+    );
     _startGameTimer();
   }
 
@@ -58,6 +73,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   void dispose() {
     _gameTimer?.cancel();
     _gameController.dispose();
+    _aiSolver?.dispose();
     _cellAnimations.forEach((key, controller) {
       controller.dispose();
     });
@@ -111,7 +127,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   }
 
   void _autoSolveWumpusWorld() {
-    final aiSolver = WumpusAISolver(
+    _aiSolver?.dispose();
+    _aiSolver = WumpusAISolver(
       agent: _gameController.agent,
       grid: _gameController.grid.cells,
       rows: widget.rows,
@@ -123,12 +140,28 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       _gameController.gameMessage = 'AI solving the Wumpus World...';
     });
 
-    aiSolver.solve(
+    _aiSolver!.solve(
       onMove: (move) {
         if (move != null) {
           setState(() {
+            // First set the direction
             _gameController.agent.setDirection(move);
+            // Then move in that direction
             _gameController.move(move);
+            // Update the grid state
+            _gameController.updateSensoryIndicators();
+          });
+        } else {
+          // Handle special actions (shooting arrow or picking up gold)
+          setState(() {
+            if (_gameController.agent.hasArrow) {
+              _gameController.shootArrow();
+            } else if (_gameController
+                .grid
+                .cells[_gameController.agent.y][_gameController.agent.x]
+                .hasGold) {
+              _gameController.agent.pickGold();
+            }
           });
         }
       },
@@ -187,9 +220,48 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         ),
       ),
       appBar: AppBar(
-        title: const Text('Wumpus World Game'),
+        title: const Text(
+          'Wumpus Universe Game',
+          style: TextStyle(color: Colors.white),
+        ),
         backgroundColor: Colors.deepPurple.withOpacity(0.8),
         elevation: 0,
+        iconTheme: const IconThemeData(
+          color: Colors.white,
+          size: 32,
+        ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            // Show confirmation dialog before leaving
+            showDialog(
+              context: context,
+              builder: (BuildContext context) {
+                return AlertDialog(
+                  title: const Text('Leave Game?'),
+                  content: const Text(
+                      'Are you sure you want to leave the current game? Your progress will be lost.'),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pop(); // Close dialog
+                      },
+                      child: const Text('Cancel'),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pop(); // Close dialog
+                        Navigator.of(context)
+                            .pop(); // Return to grid selection screen
+                      },
+                      child: const Text('Leave'),
+                    ),
+                  ],
+                );
+              },
+            );
+          },
+        ),
       ),
       extendBodyBehindAppBar: true,
       body: Container(
