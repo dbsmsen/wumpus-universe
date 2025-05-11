@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'dart:html' as html;
 import 'screens/game_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/rules_screen.dart';
@@ -9,23 +11,74 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'firebase_options.dart'; // import the generated file
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+Future<void> main() async {
   try {
+    // Ensure Flutter is initialized
+    WidgetsFlutterBinding.ensureInitialized();
+
+    // Configure platform channels with increased buffer size
+    const platform = MethodChannel('flutter/platform');
+    ServicesBinding.instance.defaultBinaryMessenger
+        .setMessageHandler(platform.name, (message) async {
+      return null;
+    });
+
+    // Initialize Firebase without waiting for Firestore test
+    print('Initializing Firebase...');
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-  } catch (e) {
-    if (e.toString().contains('already exists')) {
-      // Firebase is already initialized, we can proceed
-      print('Firebase already initialized');
-    } else {
-      // Some other error occurred
-      print('Error initializing Firebase: $e');
-      rethrow;
-    }
+    print('Firebase initialized successfully');
+
+    // Run the app immediately after Firebase initialization
+    runApp(const MyApp());
+
+    // Test Firestore connection in the background
+    _testFirestoreConnection();
+  } catch (e, stackTrace) {
+    print('Error during initialization: $e');
+    print('Stack trace: $stackTrace');
+    // Show error UI instead of crashing
+    runApp(MaterialApp(
+      home: Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, color: Colors.red, size: 48),
+              const SizedBox(height: 16),
+              Text('Error initializing app: $e',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.red)),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  html.window.location.reload();
+                },
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ));
   }
-  runApp(const MyApp());
+}
+
+// Test Firestore connection in the background
+Future<void> _testFirestoreConnection() async {
+  try {
+    await FirebaseFirestore.instance
+        .collection('test')
+        .doc('connection_test')
+        .set({
+      'timestamp': FieldValue.serverTimestamp(),
+      'status': 'connected',
+    });
+    print('Firestore connection test successful');
+  } catch (e) {
+    print('Firestore connection test failed: $e');
+  }
 }
 
 void addSampleData() async {
