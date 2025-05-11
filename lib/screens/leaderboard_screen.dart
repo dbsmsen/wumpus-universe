@@ -141,15 +141,11 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBodyBehindAppBar: true,
       body: Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           image: DecorationImage(
             image: AssetImage('assets/images/grid_background.png'),
             fit: BoxFit.cover,
-            onError: (exception, stackTrace) {
-              print('Error loading background image: $exception');
-            },
           ),
         ),
         child: SafeArea(
@@ -183,23 +179,18 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                     child: SlideTransition(
                       position: _slideAnimation,
                       child: Card(
-                        elevation: 8,
+                        elevation: 4,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Container(
                           padding: const EdgeInsets.all(24),
                           decoration: BoxDecoration(
+                            color: const Color(0xFF2D2D2D).withOpacity(0.95),
                             borderRadius: BorderRadius.circular(20),
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                Color(0xFF1A1A1A)
-                                    .withOpacity(0.95), // Very dark gray
-                                Color(0xFF2D2D2D)
-                                    .withOpacity(0.85), // Dark gray
-                              ],
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.1),
+                              width: 1,
                             ),
                           ),
                           child: Column(
