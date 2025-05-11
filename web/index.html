@@ -20,6 +20,9 @@
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="description" content="A new Flutter project.">
 
+  <!-- Google Sign-in Client ID (from Firebase Console) -->
+  <meta name="google-signin-client_id" content="622050701723-9sons2e7prtgoh4h06tthtnrml4u0kve.apps.googleusercontent.com">
+
   <!-- iOS meta tags & icons -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
@@ -31,8 +34,101 @@
 
   <title>wumpus_universe</title>
   <link rel="manifest" href="manifest.json">
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <!-- Google Sign-in SDK -->
+  <script src="https://apis.google.com/js/platform.js" async defer></script>
+
+  <script>
+    // Your web app's Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyCOpnCdMLPkQwXD29VnW6CEeayS6vnkyYw",
+      authDomain: "wumpus-universe.firebaseapp.com",
+      projectId: "wumpus-universe",
+      storageBucket: "wumpus-universe.firebasestorage.app",
+      messagingSenderId: "622050701723",
+      appId: "1:622050701723:web:04d35ef5c27b40bf73713e"
+    };
+
+    // Initialize Firebase immediately
+    let firebaseInitialized = false;
+    try {
+      if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+      }
+      firebaseInitialized = true;
+      console.log('Firebase initialized successfully in web');
+      
+      // Set up Google Auth provider
+      const provider = new firebase.auth.GoogleAuthProvider();
+      provider.addScope('email');
+      provider.addScope('profile');
+      
+      // Make provider available to Flutter
+      window.googleAuthProvider = provider;
+    } catch (e) {
+      console.error('Error initializing Firebase in web:', e);
+    }
+
+    // Make Firebase initialization status available to Flutter
+    window.firebaseInitialized = firebaseInitialized;
+
+    // Hide loading indicator as soon as Flutter is ready
+    window.addEventListener('flutter-first-frame', function() {
+      const loadingElement = document.getElementById('loading');
+      if (loadingElement) {
+        loadingElement.style.opacity = '0';
+        loadingElement.style.transition = 'opacity 0.5s ease-out';
+        setTimeout(() => {
+          loadingElement.style.display = 'none';
+        }, 500);
+      }
+    });
+  </script>
 </head>
 <body>
+  <!-- Loading indicator -->
+  <div id="loading" style="
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #1B0000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    transition: opacity 0.5s ease-out;
+  ">
+    <div style="
+      color: white;
+      font-family: Arial, sans-serif;
+      text-align: center;
+    ">
+      <div style="
+        width: 40px;
+        height: 40px;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #3498db;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 16px;
+      "></div>
+      <div id="loading-text" style="font-size: 16px;">Loading Wumpus Universe...</div>
+    </div>
+  </div>
+
+  <style>
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
