@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:wumpus_universe/screens/game_screen.dart';
 import 'package:wumpus_universe/screens/leaderboard_screen.dart';
 import 'package:wumpus_universe/screens/settings_screen.dart';
+import 'package:wumpus_universe/screens/game_mechanics_screen.dart';
+import 'package:wumpus_universe/screens/point_system_screen.dart';
 import 'package:wumpus_universe/widgets/about_dialog.dart';
 import 'package:wumpus_universe/widgets/logout_dialog.dart';
 import 'package:wumpus_universe/widgets/rules_dialog.dart';
@@ -10,6 +12,9 @@ import 'package:wumpus_universe/widgets/theme_dialog.dart';
 import 'package:wumpus_universe/widgets/tutorial_dialog.dart';
 import 'package:wumpus_universe/widgets/sounds_dialog.dart';
 import 'package:wumpus_universe/widgets/app_settings_dialog.dart';
+import 'package:wumpus_universe/widgets/info_tooltip.dart';
+import 'package:wumpus_universe/models/game_mode.dart';
+import 'package:wumpus_universe/models/difficulty_level.dart';
 
 class GridSelectionScreen extends StatefulWidget {
   const GridSelectionScreen({super.key});
@@ -18,7 +23,12 @@ class GridSelectionScreen extends StatefulWidget {
   State<GridSelectionScreen> createState() => _GridSelectionScreenState();
 }
 
-class _GridSelectionScreenState extends State<GridSelectionScreen> {
+class _GridSelectionScreenState extends State<GridSelectionScreen>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
+
   // Predefined grid sizes
   final List<List<int>> predefinedGrids = [
     [4, 4], // Standard 4x4 grid
@@ -29,6 +39,44 @@ class _GridSelectionScreenState extends State<GridSelectionScreen> {
 
   // Default custom grid size
   List<int> customGridSize = [4, 4];
+
+  // Selected game mode and difficulty
+  GameMode? selectedGameMode;
+  DifficultyLevel? selectedDifficulty;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 1000),
+      vsync: this,
+    );
+
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Curves.easeInOut,
+      ),
+    );
+
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.1),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Curves.easeOutQuad,
+      ),
+    );
+
+    _animationController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
 
   // Show dialog for custom grid size input
   void _showCustomGridDialog() {
@@ -110,12 +158,24 @@ class _GridSelectionScreenState extends State<GridSelectionScreen> {
 
   // Navigate to game screen with selected grid size
   void _startGame(int rows, int columns) {
+    if (selectedGameMode == null || selectedDifficulty == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select both a game mode and difficulty level'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => GameScreen(
           rows: rows,
           columns: columns,
+          gameMode: selectedGameMode!,
+          difficultyLevel: selectedDifficulty!,
         ),
       ),
     );
@@ -126,12 +186,7 @@ class _GridSelectionScreenState extends State<GridSelectionScreen> {
     return Scaffold(
       drawer: Drawer(
         child: Container(
-          decoration: const BoxDecoration(
-            image: DecorationImage(
-              image: AssetImage('assets/images/grid_background.png'),
-              fit: BoxFit.cover,
-            ),
-          ),
+          color: Colors.white,
           child: ListView(
             padding: EdgeInsets.zero,
             children: [
@@ -162,36 +217,58 @@ class _GridSelectionScreenState extends State<GridSelectionScreen> {
                 ),
               ),
               ListTile(
+                leading: const Icon(Icons.games, color: Colors.indigo),
+                title: const Text('Game Mechanics',
+                    style: TextStyle(color: Colors.black)),
+                subtitle: const Text('Learn how to play',
+                    style: TextStyle(color: Colors.black54)),
+                tileColor: Colors.white,
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const GameMechanicsScreen(),
+                    ),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.scoreboard, color: Colors.purple),
+                title: const Text('Point System',
+                    style: TextStyle(color: Colors.black)),
+                subtitle: const Text('Scoring rules and penalties',
+                    style: TextStyle(color: Colors.black54)),
+                tileColor: Colors.white,
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const PointSystemScreen(),
+                    ),
+                  );
+                },
+              ),
+              ListTile(
                 leading: const Icon(Icons.school, color: Colors.blue),
-                title: const Text('Tutorial'),
-                subtitle: const Text('Learn how to play'),
+                title: const Text('Tutorial',
+                    style: TextStyle(color: Colors.black)),
+                subtitle: const Text('Learn how to play',
+                    style: TextStyle(color: Colors.black54)),
+                tileColor: Colors.white,
                 onTap: () {
                   Navigator.pop(context);
                   _showTutorialDialog(context);
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.music_note, color: Colors.purple),
-                title: const Text('Sounds'),
-                subtitle: const Text('Audio settings'),
-                onTap: () {
-                  Navigator.pop(context);
-                  showSoundsDialog(context);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.settings, color: Colors.teal),
-                title: const Text('App Settings'),
-                subtitle: const Text('Manage preferences'),
-                onTap: () {
-                  Navigator.pop(context);
-                  showAppSettingsDialog(context);
-                },
-              ),
-              ListTile(
                 leading: const Icon(Icons.leaderboard, color: Colors.amber),
-                title: const Text('Leaderboard'),
-                subtitle: const Text('Top players'),
+                title: const Text('Leaderboard',
+                    style: TextStyle(color: Colors.black)),
+                subtitle: const Text('View high scores',
+                    style: TextStyle(color: Colors.black54)),
+                tileColor: Colors.white,
                 onTap: () {
                   Navigator.pop(context);
                   Navigator.push(
@@ -203,37 +280,73 @@ class _GridSelectionScreenState extends State<GridSelectionScreen> {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.rule, color: Colors.green),
-                title: const Text('Rules'),
-                subtitle: const Text('Game rules'),
+                leading: const Icon(Icons.settings, color: Colors.teal),
+                title: const Text('App Settings',
+                    style: TextStyle(color: Colors.black)),
+                subtitle: const Text('Manage preferences',
+                    style: TextStyle(color: Colors.black54)),
+                tileColor: Colors.white,
                 onTap: () {
                   Navigator.pop(context);
-                  _showRulesDialog(context);
+                  showAppSettingsDialog(context);
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.palette, color: Colors.purple),
-                title: const Text('Theme'),
-                subtitle: const Text('Customize appearance'),
+                leading: const Icon(Icons.music_note, color: Colors.purple),
+                title:
+                    const Text('Sounds', style: TextStyle(color: Colors.black)),
+                subtitle: const Text('Audio settings',
+                    style: TextStyle(color: Colors.black54)),
+                tileColor: Colors.white,
+                onTap: () {
+                  Navigator.pop(context);
+                  showSoundsDialog(context);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.palette, color: Colors.orange),
+                title:
+                    const Text('Theme', style: TextStyle(color: Colors.black)),
+                subtitle: const Text('Customize appearance',
+                    style: TextStyle(color: Colors.black54)),
+                tileColor: Colors.white,
                 onTap: () {
                   Navigator.pop(context);
                   _showThemeDialog(context);
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.info, color: Colors.teal),
-                title: const Text('About'),
-                subtitle: const Text('About the game'),
+                leading: const Icon(Icons.star, color: Colors.amber),
+                title: const Text('Rate & Review',
+                    style: TextStyle(color: Colors.black)),
+                subtitle: const Text('Rate on Google Play',
+                    style: TextStyle(color: Colors.black54)),
+                tileColor: Colors.white,
+                onTap: () {
+                  Navigator.pop(context);
+                  // TODO: Add Google Play rating functionality
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.info_outline, color: Colors.indigo),
+                title:
+                    const Text('About', style: TextStyle(color: Colors.black)),
+                subtitle: const Text('Game information',
+                    style: TextStyle(color: Colors.black54)),
+                tileColor: Colors.white,
                 onTap: () {
                   Navigator.pop(context);
                   _showAboutDialog(context);
                 },
               ),
-              const Divider(),
+              const Divider(color: Colors.black12),
               ListTile(
                 leading: const Icon(Icons.logout, color: Colors.red),
-                title: const Text('Logout'),
-                subtitle: const Text('Sign out'),
+                title:
+                    const Text('Logout', style: TextStyle(color: Colors.black)),
+                subtitle: const Text('Exit the game',
+                    style: TextStyle(color: Colors.black54)),
+                tileColor: Colors.white,
                 onTap: () {
                   Navigator.pop(context);
                   _showLogoutDialog(context);
@@ -244,9 +357,15 @@ class _GridSelectionScreenState extends State<GridSelectionScreen> {
         ),
       ),
       appBar: AppBar(
-        title: const Text('Select Grid Size'),
-        backgroundColor: Colors.blue.withOpacity(0.8),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(
+          color: Colors.white,
+          size: 32,
+        ),
       ),
+      extendBodyBehindAppBar: true,
       body: Container(
         decoration: const BoxDecoration(
           image: DecorationImage(
@@ -259,50 +378,200 @@ class _GridSelectionScreenState extends State<GridSelectionScreen> {
             child: SingleChildScrollView(
               child: Padding(
                 padding: const EdgeInsets.all(20.0),
-                child: Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.3),
-                      width: 1,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text(
-                        'Choose Your Game Grid',
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          letterSpacing: 1.2,
+                child: FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: SlideTransition(
+                    position: _slideAnimation,
+                    child: Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1A1A1A).withOpacity(0.65),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.15),
+                          width: 1,
                         ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.15),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
-                      const Text(
-                        'Predefined Grids',
-                        style: TextStyle(
-                          fontSize: 20,
-                          color: Colors.white,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Wrap(
-                        spacing: 12,
-                        runSpacing: 12,
-                        alignment: WrapAlignment.center,
-                        children: predefinedGrids.map((grid) {
-                          return ElevatedButton(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text(
+                            'Choose Your Game Style',
+                            style: TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                          const SizedBox(height: 32),
+                          // Game Mode Selection
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              const Center(
+                                child: Text(
+                                  'Game Mode',
+                                  style: TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.normal,
+                                    color: Colors.white,
+                                    letterSpacing: 1.2,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                alignment: WrapAlignment.center,
+                                children: GameMode.modes.map((mode) {
+                                  return InfoTooltip(
+                                    message: mode.description,
+                                    child: ElevatedButton.icon(
+                                      onPressed: () {
+                                        setState(() {
+                                          selectedGameMode = mode;
+                                        });
+                                      },
+                                      icon: Icon(mode.icon),
+                                      label: Text(mode.name),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor:
+                                            selectedGameMode == mode
+                                                ? mode.color
+                                                : mode.color.withOpacity(0.5),
+                                        foregroundColor: Colors.white,
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 16,
+                                          vertical: 12,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 32),
+                          // Difficulty Level Selection
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              const Center(
+                                child: Text(
+                                  'Difficulty Level',
+                                  style: TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.normal,
+                                    color: Colors.white,
+                                    letterSpacing: 1.2,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                alignment: WrapAlignment.center,
+                                children: DifficultyLevel.levels.map((level) {
+                                  return InfoTooltip(
+                                    message: level.description,
+                                    child: ElevatedButton(
+                                      onPressed: () {
+                                        setState(() {
+                                          selectedDifficulty = level;
+                                        });
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor:
+                                            selectedDifficulty == level
+                                                ? level.color
+                                                : level.color.withOpacity(0.5),
+                                        foregroundColor: Colors.white,
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 16,
+                                          vertical: 12,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                        ),
+                                      ),
+                                      child: Text(level.name),
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 32),
+                          const Center(
+                            child: Text(
+                              'Predefined Grids',
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.normal,
+                                color: Colors.white,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Wrap(
+                            spacing: 12,
+                            runSpacing: 12,
+                            alignment: WrapAlignment.center,
+                            children: predefinedGrids.map((grid) {
+                              return ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.amber[700],
+                                  foregroundColor: Colors.black,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 24,
+                                    vertical: 16,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  elevation: 4,
+                                ),
+                                onPressed: () => _startGame(grid[0], grid[1]),
+                                child: Text(
+                                  '${grid[0]} x ${grid[1]}',
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                          const SizedBox(height: 32),
+                          const Center(
+                            child: Text(
+                              'Custom Grid',
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.normal,
+                                color: Colors.white,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          ElevatedButton(
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.amber[700],
                               foregroundColor: Colors.black,
@@ -315,76 +584,57 @@ class _GridSelectionScreenState extends State<GridSelectionScreen> {
                               ),
                               elevation: 4,
                             ),
-                            onPressed: () => _startGame(grid[0], grid[1]),
+                            onPressed: _showCustomGridDialog,
                             child: Text(
-                              '${grid[0]} x ${grid[1]}',
+                              'Custom (${customGridSize[0]} x ${customGridSize[1]})',
                               style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                          );
-                        }).toList(),
+                          ),
+                          const SizedBox(height: 32),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green[700],
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 32,
+                                vertical: 20,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              elevation: 4,
+                            ),
+                            onPressed: () {
+                              if (selectedGameMode == null ||
+                                  selectedDifficulty == null) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                        'Please select both a game mode and difficulty level'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                                return;
+                              }
+                              _startGame(
+                                customGridSize[0],
+                                customGridSize[1],
+                              );
+                            },
+                            child: const Text(
+                              'Start Game with Selected Grid',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 40),
-                      const Text(
-                        'Custom Grid',
-                        style: TextStyle(
-                          fontSize: 20,
-                          color: Colors.white,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.amber[700],
-                          foregroundColor: Colors.black,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 16,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          elevation: 4,
-                        ),
-                        onPressed: _showCustomGridDialog,
-                        child: Text(
-                          'Custom (${customGridSize[0]} x ${customGridSize[1]})',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 40),
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green[700],
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 32,
-                            vertical: 20,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          elevation: 4,
-                        ),
-                        onPressed: () => _startGame(
-                          customGridSize[0],
-                          customGridSize[1],
-                        ),
-                        child: const Text(
-                          'Start Game with Selected Grid',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ),
