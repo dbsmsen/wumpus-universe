@@ -40,12 +40,14 @@ class AnimatedButton extends StatelessWidget {
   final String text;
   final IconData icon;
   final Color color;
+  final Color textColor;
 
   const AnimatedButton({
     required this.onPressed,
     required this.text,
     required this.icon,
     required this.color,
+    this.textColor = Colors.white,
     super.key,
   });
 
@@ -53,14 +55,18 @@ class AnimatedButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return ElevatedButton.icon(
       onPressed: onPressed,
-      icon: Icon(icon, color: Colors.white),
+      icon: Icon(icon, color: textColor),
       label: Text(
         text,
-        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 16,
+          color: textColor,
+        ),
       ),
       style: ElevatedButton.styleFrom(
         backgroundColor: color,
-        foregroundColor: Colors.white,
+        foregroundColor: textColor,
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
         elevation: 8,
         shadowColor: color.withOpacity(0.3),
