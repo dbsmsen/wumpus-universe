@@ -1,4 +1,5 @@
 import 'direction.dart';
+import 'dart:math';
 
 class Agent {
   int x = 0;
@@ -10,7 +11,9 @@ class Agent {
   bool hasWon = false;
   int score = 0;
   int moves = 0;
-  bool canClimb = false;  // Can only climb out at starting position with gold
+  bool canClimb = false; // Can only climb out at starting position with gold
+  double hintFrequency = 0.5; // Probability of getting a hint
+  double aggressiveness = 0.5; // Probability of Wumpus attacking
 
   // Constants for scoring
   static const int MOVE_COST = -1;
@@ -22,7 +25,7 @@ class Agent {
   // Move the agent based on the current direction
   void move(Direction dir, {int maxX = 3, int maxY = 3}) {
     if (!isAlive) return;
-    
+
     direction = dir;
     switch (dir) {
       case Direction.up:
@@ -38,7 +41,7 @@ class Agent {
         if (x < maxX) x++;
         break;
     }
-    
+
     moves++;
     addPoints(MOVE_COST);
   }
@@ -80,7 +83,7 @@ class Agent {
   // Shoot arrow in the current direction
   bool shootArrow() {
     if (!hasArrow || !isAlive) return false;
-    
+
     hasArrow = false;
     addPoints(ARROW_COST);
     return true;
@@ -123,5 +126,15 @@ class Agent {
     if (!isAlive) status.add("Dead");
     if (hasWon) status.add("Won");
     return status.join(", ");
+  }
+
+  // Check if agent should get a hint based on hint frequency
+  bool shouldGetHint() {
+    return Random().nextDouble() < hintFrequency;
+  }
+
+  // Check if Wumpus should attack based on aggressiveness
+  bool shouldWumpusAttack() {
+    return Random().nextDouble() < aggressiveness;
   }
 }
