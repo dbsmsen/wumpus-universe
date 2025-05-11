@@ -121,14 +121,7 @@ class _TutorialDialogState extends State<TutorialDialog> {
         width: MediaQuery.of(context).size.width * 0.8,
         height: MediaQuery.of(context).size.height * 0.8,
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              pageColors[currentPage],
-              pageColors[currentPage].withOpacity(0.8),
-            ],
-          ),
+          color: Colors.black.withOpacity(0.5),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: Colors.white.withOpacity(0.2),
@@ -152,7 +145,7 @@ class _TutorialDialogState extends State<TutorialDialog> {
                   const Text(
                     'Tutorial',
                     style: TextStyle(
-                      fontSize: 24,
+                      fontSize: 32,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
@@ -167,7 +160,8 @@ class _TutorialDialogState extends State<TutorialDialog> {
             Expanded(
               child: PageView.builder(
                 controller: _pageController,
-                physics: const NeverScrollableScrollPhysics(), // Prevent swiping
+                physics:
+                    const NeverScrollableScrollPhysics(), // Prevent swiping
                 itemCount: pages.length,
                 itemBuilder: (context, index) {
                   final page = pages[index];
@@ -220,7 +214,7 @@ class _TutorialDialogState extends State<TutorialDialog> {
                                       padding: const EdgeInsets.symmetric(
                                           horizontal: 16, vertical: 8),
                                       decoration: BoxDecoration(
-                                        color: Colors.white.withOpacity(0.1),
+                                        color: Colors.white.withOpacity(0.15),
                                         borderRadius: BorderRadius.circular(12),
                                         border: Border.all(
                                           color: Colors.white.withOpacity(0.2),
@@ -229,12 +223,14 @@ class _TutorialDialogState extends State<TutorialDialog> {
                                       ),
                                       child: Center(
                                         child: Row(
-                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
                                           children: [
                                             Container(
                                               padding: const EdgeInsets.all(8),
                                               decoration: BoxDecoration(
-                                                color: Colors.white.withOpacity(0.2),
+                                                color: Colors.white
+                                                    .withOpacity(0.25),
                                                 shape: BoxShape.circle,
                                               ),
                                               child: Text(
@@ -269,11 +265,10 @@ class _TutorialDialogState extends State<TutorialDialog> {
                 },
               ),
             ),
-
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   if (currentPage > 0)
                     TextButton.icon(
@@ -293,27 +288,30 @@ class _TutorialDialogState extends State<TutorialDialog> {
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                    ),
-                  const SizedBox(width: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(
-                      pages.length,
-                      (dotIndex) => AnimatedContainer(
-                        duration: const Duration(milliseconds: 300),
-                        margin: const EdgeInsets.symmetric(horizontal: 4),
-                        width: currentPage == dotIndex ? 24 : 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: currentPage == dotIndex
-                              ? Colors.white
-                              : Colors.white.withOpacity(0.3),
-                          borderRadius: BorderRadius.circular(4),
+                    )
+                  else
+                    const SizedBox(width: 80), // Placeholder for alignment
+                  SizedBox(
+                    width: 120, // Fixed width for dots container
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(
+                        pages.length,
+                        (dotIndex) => AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          margin: const EdgeInsets.symmetric(horizontal: 2),
+                          width: currentPage == dotIndex ? 16 : 6,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: currentPage == dotIndex
+                                ? Colors.white
+                                : Colors.white.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(3),
+                          ),
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 20),
                   if (currentPage < pages.length - 1)
                     TextButton.icon(
                       onPressed: () {
