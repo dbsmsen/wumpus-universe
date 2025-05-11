@@ -9,12 +9,15 @@ class WumpusAISolver {
   final List<List<Cell>> grid;
   final int rows;
   final int columns;
+  Timer? _moveTimer;
+  bool _isDisposed = false;
 
-  WumpusAISolver(
-      {required this.agent,
-      required this.grid,
-      required this.rows,
-      required this.columns});
+  WumpusAISolver({
+    required this.agent,
+    required this.grid,
+    required this.rows,
+    required this.columns,
+  });
 
   // Check if a cell is safe to move to based on sensory information
   bool _isSafeCell(int x, int y) {
@@ -23,7 +26,8 @@ class WumpusAISolver {
 
     // Check for hazards
     final cell = grid[y][x];
-    if (cell.hasPit || (cell.hasWumpus && !cell.isWumpusDead)) return false;
+    if (cell.hasPit) return false;
+    if (cell.hasWumpus && !cell.isWumpusDead) return false;
 
     // Check if cell has been visited and is safe
     if (cell.visited && cell.safe) return true;
@@ -46,6 +50,11 @@ class WumpusAISolver {
     // If no stench or breeze, cell is safe
     if (!hasStench && !hasBreeze) {
       cell.safe = true;
+      return true;
+    }
+
+    // If we have an arrow and there's stench, we might be able to kill the Wumpus
+    if (hasStench && agent.hasArrow) {
       return true;
     }
 
@@ -76,9 +85,13 @@ class WumpusAISolver {
     return (-1, -1);
   }
 
-  // Find the shortest safe path using A* algorithm
+  // Find the shortest safe path using BFS
   List<dir.Direction> _findShortestSafePath(
-      int startX, int startY, int targetX, int targetY) {
+    int startX,
+    int startY,
+    int targetX,
+    int targetY,
+  ) {
     // Possible move directions
     final directions = [
       dir.Direction.up,
@@ -90,7 +103,9 @@ class WumpusAISolver {
     // Tracking visited cells and paths
     final visited = List.generate(rows, (_) => List.filled(columns, false));
     final paths = List.generate(
-        rows, (_) => List.generate(columns, (_) => <dir.Direction>[]));
+      rows,
+      (_) => List.generate(columns, (_) => <dir.Direction>[]),
+    );
 
     // Queue for BFS
     final queue = <(int, int)>[(startX, startY)];
@@ -120,6 +135,11 @@ class WumpusAISolver {
           case dir.Direction.left:
             newX--;
             break;
+        }
+
+        // Check if new cell is within bounds
+        if (newX < 0 || newX >= columns || newY < 0 || newY >= rows) {
+          continue;
         }
 
         // Check if new cell is safe and not visited
@@ -153,25 +173,37 @@ class WumpusAISolver {
       final pathToWumpus =
           _findShortestSafePath(agent.x, agent.y, wumpusX, wumpusY);
       if (pathToWumpus.isNotEmpty) {
-        // Add shooting arrow action
-        return [...pathToWumpus, null];
+        // Add shooting arrow action and then path to gold
+        final pathToGold =
+            _findShortestSafePath(wumpusX, wumpusY, goldX, goldY);
+        if (pathToGold.isNotEmpty) {
+          final returnPath = _findShortestSafePath(goldX, goldY, 0, 0);
+          if (returnPath.isNotEmpty) {
+            return [
+              ...pathToWumpus,
+              null, // Shoot arrow
+              ...pathToGold,
+              null, // Pick up gold
+              ...returnPath, // Return to start
+            ];
+          }
+        }
       }
     }
 
-    // Find path to gold
+    // If we can't kill the Wumpus or don't need to, try direct path to gold
     final pathToGold = _findShortestSafePath(agent.x, agent.y, goldX, goldY);
-
-    // If no safe path to gold, return empty path
     if (pathToGold.isEmpty) return [];
 
+    final returnPath = _findShortestSafePath(goldX, goldY, 0, 0);
+    if (returnPath.isEmpty) return [];
+
     // Combine paths
-    final completePath = [
+    return [
       ...pathToGold,
       null, // Pick up gold
-      ...(_findShortestSafePath(goldX, goldY, 0, 0)) // Return to start
+      ...returnPath, // Return to start
     ];
-
-    return completePath;
   }
 
   // Execute the AI solution with callbacks
@@ -181,6 +213,9 @@ class WumpusAISolver {
     required void Function(String) onMessage,
     int moveDelayMs = 500,
   }) {
+    // Reset disposal state
+    _isDisposed = false;
+
     // Calculate the path
     List<dir.Direction?> path = calculatePath();
 
@@ -191,12 +226,22 @@ class WumpusAISolver {
       return;
     }
 
+    // Cancel any existing timer
+    _moveTimer?.cancel();
+
     // Use a Timer to create a delay between moves
-    Timer.periodic(Duration(milliseconds: moveDelayMs), (timer) {
+    _moveTimer = Timer.periodic(Duration(milliseconds: moveDelayMs), (timer) {
+      if (_isDisposed) {
+        timer.cancel();
+        return;
+      }
+
       if (path.isEmpty) {
         timer.cancel();
-        onComplete();
-        onMessage('AI completed the mission!');
+        if (!_isDisposed) {
+          onComplete();
+          onMessage('AI completed the mission!');
+        }
         return;
       }
 
@@ -208,14 +253,28 @@ class WumpusAISolver {
         if (wumpusLocation != null &&
             agent.x == wumpusLocation.$1 &&
             agent.y == wumpusLocation.$2) {
-          onMessage('Shooting arrow at Wumpus!');
-          // The game controller will handle the actual shooting
+          if (!_isDisposed) {
+            onMessage('Shooting arrow at Wumpus!');
+            onMove(null); // Signal to shoot arrow
+          }
         } else {
-          onMessage('Gold picked up!');
+          if (!_isDisposed) {
+            onMessage('Gold picked up!');
+            onMove(null); // Signal to pick up gold
+          }
         }
       } else {
-        onMove(nextMove);
+        if (!_isDisposed) {
+          onMove(nextMove);
+        }
       }
     });
+  }
+
+  // Add dispose method to clean up resources
+  void dispose() {
+    _isDisposed = true;
+    _moveTimer?.cancel();
+    _moveTimer = null;
   }
 }
