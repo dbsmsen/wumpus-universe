@@ -79,55 +79,281 @@
     // Hide loading indicator as soon as Flutter is ready
     window.addEventListener('flutter-first-frame', function() {
       const loadingElement = document.getElementById('loading');
+      const particleCanvas = document.getElementById('particle-canvas');
+      
       if (loadingElement) {
         loadingElement.style.opacity = '0';
         loadingElement.style.transition = 'opacity 0.5s ease-out';
         setTimeout(() => {
           loadingElement.style.display = 'none';
+          // Remove particles when loading screen is hidden
+          if (particleCanvas) {
+            const ctx = particleCanvas.getContext('2d');
+            ctx.clearRect(0, 0, particleCanvas.width, particleCanvas.height);
+            particleCanvas.remove();
+          }
         }, 500);
       }
     });
+
+    // Particle effect
+    document.addEventListener('DOMContentLoaded', function() {
+      const canvas = document.getElementById('particle-canvas');
+      if (!canvas) return; // Exit if canvas doesn't exist
+      
+      const ctx = canvas.getContext('2d');
+      let particles = [];
+      let animationFrameId;
+      let isAnimating = true;
+      
+      function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      }
+      
+      window.addEventListener('resize', resizeCanvas);
+      resizeCanvas();
+      
+      class Particle {
+        constructor() {
+          this.reset();
+        }
+        
+        reset() {
+          this.x = Math.random() * canvas.width;
+          this.y = Math.random() * canvas.height;
+          this.size = Math.random() * 3 + 2;
+          this.speedX = Math.random() * 1.5 - 0.75;
+          this.speedY = Math.random() * 1.5 - 0.75;
+          this.opacity = Math.random() * 0.5 + 0.3;
+        }
+        
+        update() {
+          if (!isAnimating) return;
+          this.x += this.speedX;
+          this.y += this.speedY;
+          
+          if (this.x < 0 || this.x > canvas.width) this.speedX *= -1;
+          if (this.y < 0 || this.y > canvas.height) this.speedY *= -1;
+        }
+        
+        draw() {
+          if (!isAnimating) return;
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(255, 255, 255, ${this.opacity})`;
+          ctx.fill();
+        }
+      }
+      
+      // Create particles
+      for (let i = 0; i < 150; i++) {
+        particles.push(new Particle());
+      }
+      
+      function animate() {
+        if (!isAnimating) return;
+        
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        particles.forEach(particle => {
+          particle.update();
+          particle.draw();
+        });
+        
+        animationFrameId = requestAnimationFrame(animate);
+      }
+      
+      // Start animation immediately
+      animate();
+
+      // Clean up function
+      function cleanup() {
+        isAnimating = false;
+        if (animationFrameId) {
+          cancelAnimationFrame(animationFrameId);
+        }
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        particles = [];
+      }
+
+      // Clean up when canvas is removed
+      canvas.addEventListener('remove', cleanup);
+      
+      // Also clean up when the page is about to unload
+      window.addEventListener('beforeunload', cleanup);
+    });
   </script>
-</head>
-<body>
-  <!-- Loading indicator -->
-  <div id="loading" style="
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: #1B0000;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 9999;
-    transition: opacity 0.5s ease-out;
-  ">
-    <div style="
-      color: white;
-      font-family: Arial, sans-serif;
-      text-align: center;
-    ">
-      <div style="
-        width: 40px;
-        height: 40px;
-        border: 4px solid #f3f3f3;
-        border-top: 4px solid #3498db;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-        margin: 0 auto 16px;
-      "></div>
-      <div id="loading-text" style="font-size: 16px;">Loading Wumpus Universe...</div>
-    </div>
-  </div>
 
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Poppins', sans-serif;
+      overflow: hidden;
+      background: #1B0000;
+    }
+
+    #particle-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    #loading {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #1B0000 0%, #2C1810 100%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 2;
+      transition: opacity 0.5s ease-out;
+    }
+
+    .loading-container {
+      text-align: center;
+      padding: 3rem;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 30px;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2),
+                  0 0 0 1px rgba(255, 255, 255, 0.1),
+                  inset 0 0 32px rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transform-style: preserve-3d;
+      perspective: 1000px;
+      position: relative;
+      z-index: 3;
+    }
+
+    .loading-spinner {
+      width: 80px;
+      height: 80px;
+      border: 4px solid rgba(255, 255, 255, 0.1);
+      border-top: 4px solid #4A90E2;
+      border-radius: 50%;
+      margin: 0 auto 30px;
+      animation: spin 1.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
+      box-shadow: 0 0 20px rgba(74, 144, 226, 0.3);
+    }
+
+    .loading-text {
+      color: white;
+      font-size: 36px;
+      font-weight: 700;
+      margin-bottom: 15px;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3),
+                   0 0 20px rgba(74, 144, 226, 0.5);
+      letter-spacing: 1px;
+      background: linear-gradient(45deg, #4A90E2, #50E3C2);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: textGlow 2s ease-in-out infinite;
+    }
+
+    .loading-subtext {
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 18px;
+      margin-top: 10px;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      letter-spacing: 0.5px;
+    }
+
+    .progress-bar {
+      width: 250px;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 3px;
+      margin: 30px auto 0;
+      overflow: hidden;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #4A90E2 0%, #50E3C2 100%);
+      width: 0%;
+      animation: progress 3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+      box-shadow: 0 0 10px rgba(74, 144, 226, 0.5);
+    }
+
     @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+      0% { transform: rotate(0deg) scale(1); }
+      50% { transform: rotate(180deg) scale(1.1); }
+      100% { transform: rotate(360deg) scale(1); }
+    }
+
+    @keyframes progress {
+      0% { width: 0%; }
+      100% { 
+        width: 100%;
+        animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+      }
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1) translateZ(0); }
+      50% { transform: scale(1.05) translateZ(20px); }
+      100% { transform: scale(1) translateZ(0); }
+    }
+
+    @keyframes textGlow {
+      0% { filter: brightness(1); }
+      50% { filter: brightness(1.2); }
+      100% { filter: brightness(1); }
+    }
+
+    .loading-container {
+      animation: pulse 3s infinite;
+    }
+
+    /* Add shine effect */
+    .loading-container::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(
+        45deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.1) 50%,
+        transparent 100%
+      );
+      transform: rotate(45deg);
+      animation: shine 3s infinite;
+    }
+
+    @keyframes shine {
+      0% { transform: translateX(-100%) rotate(45deg); }
+      100% { transform: translateX(100%) rotate(45deg); }
     }
   </style>
+</head>
+<body>
+  <canvas id="particle-canvas"></canvas>
+  <!-- Loading indicator -->
+  <div id="loading">
+    <div class="loading-container">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">Wumpus Universe</div>
+      <div class="loading-subtext">Loading your adventure...</div>
+      <div class="progress-bar">
+        <div class="progress-bar-fill"></div>
+      </div>
+    </div>
+  </div>
 
   <script src="flutter_bootstrap.js" async></script>
 </body>
