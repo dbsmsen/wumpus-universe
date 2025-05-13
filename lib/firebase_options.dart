@@ -50,8 +50,8 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyCOpnCdMLPkQwXD29VnW6CEeayS6vnkyYw',
-    appId: '1:622050701723:android:04d35ef5c27b40bf73713e',
+    apiKey: 'AIzaSyDYc2S1nNxxGTnYA5TBnAM58saDb41qfB0',
+    appId: '1:622050701723:android:af0611ded19e33b973713e',
     messagingSenderId: '622050701723',
     projectId: 'wumpus-universe',
     storageBucket: 'wumpus-universe.firebasestorage.app',
