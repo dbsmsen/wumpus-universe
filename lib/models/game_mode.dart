@@ -44,20 +44,6 @@ class GameMode {
       },
     ),
     GameMode(
-      name: 'Survival',
-      description:
-          'Endless mode with increasing difficulty. How long can you survive?',
-      icon: Icons.favorite,
-      color: Colors.red,
-      settings: {
-        'timeLimit': false,
-        'wumpusCount': 2,
-        'goldCount': 1,
-        'pitCount': 4,
-        'difficultyIncrease': true,
-      },
-    ),
-    GameMode(
       name: 'Treasure Hunt',
       description: 'Multiple gold pieces to collect. Find them all to win!',
       icon: Icons.diamond,
