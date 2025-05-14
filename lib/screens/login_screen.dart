@@ -5,11 +5,11 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:firebase_core/firebase_core.dart';
 import '../widgets/auth_shared_widget.dart';
 import '../widgets/floating_background.dart';
-import 'initial_onboarding_screen.dart';
 import 'register_screen.dart';
 import 'package:flutter/services.dart';
 import 'grid_selection_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -148,7 +148,7 @@ class _LoginScreenState extends State<LoginScreen>
     }
   }
 
-  void _signInWithGoogle() async {
+  Future<void> _signInWithGoogle() async {
     try {
       print('Starting Google Sign In process...');
 
@@ -161,13 +161,36 @@ class _LoginScreenState extends State<LoginScreen>
       // Show loading dialog immediately
       await _showLoadingDialog('Signing in with Google...');
 
-      final GoogleAuthProvider googleProvider = GoogleAuthProvider();
-      googleProvider.addScope('email');
-      googleProvider.addScope('profile');
+      UserCredential userCredential;
 
-      print('Initiating Google Sign In popup...');
-      final UserCredential userCredential =
-          await _auth.signInWithPopup(googleProvider);
+      if (kIsWeb) {
+        // Web platform
+        final GoogleAuthProvider googleProvider = GoogleAuthProvider();
+        googleProvider.addScope('email');
+        googleProvider.addScope('profile');
+        userCredential = await _auth.signInWithPopup(googleProvider);
+      } else {
+        // Mobile platforms (Android & iOS)
+        final GoogleSignIn googleSignIn = GoogleSignIn();
+        final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+
+        if (googleUser == null) {
+          if (mounted && Navigator.canPop(context)) {
+            Navigator.of(context).pop(); // Close loading dialog
+          }
+          return; // User canceled the sign-in flow
+        }
+
+        final GoogleSignInAuthentication googleAuth =
+            await googleUser.authentication;
+        final credential = GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken: googleAuth.idToken,
+        );
+
+        userCredential = await _auth.signInWithCredential(credential);
+      }
+
       final User? user = userCredential.user;
 
       if (user != null) {
@@ -309,10 +332,22 @@ class _LoginScreenState extends State<LoginScreen>
     );
 
     _animationController.forward();
+
+    // Prevent screen capture
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.light,
+    ));
+    // Enable FLAG_SECURE to prevent screen capture
+    SystemChannels.platform.invokeMethod('SystemNavigator.setSecureFlag', true);
   }
 
   @override
   void dispose() {
+    // Disable FLAG_SECURE when leaving the screen
+    SystemChannels.platform
+        .invokeMethod('SystemNavigator.setSecureFlag', false);
     _animationController.dispose();
     super.dispose();
   }
@@ -325,273 +360,272 @@ class _LoginScreenState extends State<LoginScreen>
     ));
 
     return Scaffold(
-      body: SafeArea(
-        child: Container(
-          width: double.infinity,
-          height: double.infinity,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                const Color(0xFF1B0000), // Deepest Brown
-                const Color(0xFF2C1810), // Very Deep Brown
-                const Color(0xFF3E2723), // Deep Brown
-                const Color(0xFF2C1810), // Very Deep Brown
-              ],
-              stops: const [0.0, 0.3, 0.6, 1.0],
-            ),
+      extendBodyBehindAppBar: true,
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF1B0000), // Deepest Brown
+              Color(0xFF2C1810), // Very Deep Brown
+              Color(0xFF3E2723), // Deep Brown
+              Color(0xFF2C1810), // Very Deep Brown
+            ],
+            stops: [0.0, 0.3, 0.6, 1.0],
           ),
-          child: Stack(
-            children: [
-              // Add floating background
-              const FloatingBackground(),
-              // Background animated circles
-              Positioned(
-                top: -100,
-                right: -100,
-                child: Container(
-                  width: 300,
-                  height: 300,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withOpacity(0.1),
-                  ),
+        ),
+        child: Stack(
+          children: [
+            // Add floating background
+            const FloatingBackground(),
+            // Background animated circles
+            Positioned(
+              top: -100,
+              right: -100,
+              child: Container(
+                width: 300,
+                height: 300,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withOpacity(0.1),
                 ),
               ),
-              Positioned(
-                bottom: -150,
-                left: -150,
-                child: Container(
-                  width: 400,
-                  height: 400,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withOpacity(0.1),
-                  ),
+            ),
+            Positioned(
+              bottom: -150,
+              left: -150,
+              child: Container(
+                width: 400,
+                height: 400,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withOpacity(0.1),
                 ),
               ),
-              Center(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(32),
-                  child: FadeTransition(
-                    opacity: _fadeAnimation,
-                    child: SlideTransition(
-                      position: _slideAnimation,
-                      child: GlassmorphicCard(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Center(
-                              child: Column(
-                                children: [
-                                  Hero(
-                                    tag: 'app_logo',
-                                    child: Container(
-                                      padding: const EdgeInsets.all(20),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white.withOpacity(0.1),
-                                        shape: BoxShape.circle,
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.deepPurpleAccent[100]!
-                                                .withOpacity(0.3),
-                                            blurRadius: 20,
-                                            spreadRadius: 5,
-                                          ),
-                                        ],
-                                      ),
-                                      child: const Icon(
-                                        Icons.explore_rounded,
-                                        size: 100,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 24),
-                                  Text(
-                                    'Wumpus Universe',
-                                    style: TextStyle(
-                                      fontSize: 36,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                      letterSpacing: 1.5,
-                                      shadows: [
-                                        Shadow(
-                                          color: Colors.black.withOpacity(0.3),
-                                          offset: const Offset(2, 2),
-                                          blurRadius: 4,
+            ),
+            Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(32),
+                child: FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: SlideTransition(
+                    position: _slideAnimation,
+                    child: GlassmorphicCard(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Center(
+                            child: Column(
+                              children: [
+                                Hero(
+                                  tag: 'app_logo',
+                                  child: Container(
+                                    padding: const EdgeInsets.all(20),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.1),
+                                      shape: BoxShape.circle,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.deepPurpleAccent[100]!
+                                              .withOpacity(0.3),
+                                          blurRadius: 20,
+                                          spreadRadius: 5,
                                         ),
                                       ],
                                     ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'Explore the Mysterious World',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      color: Colors.white.withOpacity(0.8),
-                                      letterSpacing: 0.5,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 40),
-                            // Username TextField
-                            TextField(
-                              controller: _usernameController,
-                              style: const TextStyle(color: Colors.white),
-                              decoration: InputDecoration(
-                                labelText: 'Username',
-                                labelStyle:
-                                    const TextStyle(color: Colors.white70),
-                                prefixIcon: const Icon(Icons.person_rounded,
-                                    color: Colors.white70),
-                                filled: true,
-                                fillColor: Colors.white.withOpacity(0.1),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                  borderSide: BorderSide.none,
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                  borderSide: BorderSide(
-                                    color: Colors.white.withOpacity(0.2),
-                                    width: 1,
-                                  ),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                  borderSide: const BorderSide(
-                                    color: Colors.white,
-                                    width: 2,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                            // Password TextField
-                            TextField(
-                              controller: _passwordController,
-                              obscureText: true,
-                              style: const TextStyle(color: Colors.white),
-                              decoration: InputDecoration(
-                                labelText: 'Password',
-                                labelStyle:
-                                    const TextStyle(color: Colors.white70),
-                                prefixIcon: const Icon(Icons.lock_rounded,
-                                    color: Colors.white70),
-                                filled: true,
-                                fillColor: Colors.white.withOpacity(0.1),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                  borderSide: BorderSide.none,
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                  borderSide: BorderSide(
-                                    color: Colors.white.withOpacity(0.2),
-                                    width: 1,
-                                  ),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                  borderSide: const BorderSide(
-                                    color: Colors.white,
-                                    width: 2,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 32),
-                            // Login Button
-                            AnimatedButton(
-                              onPressed: _login,
-                              text: 'Login',
-                              icon: Icons.login_rounded,
-                              color:
-                                  const Color(0xFFC4A50D), // Dark yellow color
-                              textColor:
-                                  Colors.white, // Blue text color
-                            ),
-                            const SizedBox(height: 24),
-                            // Alternative Login Options
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                TextButton.icon(
-                                  onPressed: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => const RegisterScreen(),
-                                      ),
-                                    );
-                                  },
-                                  style: TextButton.styleFrom(
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 16, vertical: 8),
-                                  ),
-                                  icon: const Icon(Icons.person_add_rounded,
-                                      color: Colors.white),
-                                  label: const Text(
-                                    'Register Here',
-                                    style: TextStyle(
+                                    child: const Icon(
+                                      Icons.explore_rounded,
+                                      size: 100,
                                       color: Colors.white,
-                                      fontWeight: FontWeight.bold,
                                     ),
                                   ),
                                 ),
-                                Container(
-                                  width: 1,
-                                  height: 24,
-                                  color: Colors.white.withOpacity(0.2),
+                                const SizedBox(height: 24),
+                                Text(
+                                  'Wumpus Universe',
+                                  style: TextStyle(
+                                    fontSize: 36,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                    letterSpacing: 1.5,
+                                    shadows: [
+                                      Shadow(
+                                        color: Colors.black.withOpacity(0.3),
+                                        offset: const Offset(2, 2),
+                                        blurRadius: 4,
+                                      ),
+                                    ],
+                                  ),
+                                  textAlign: TextAlign.center,
                                 ),
-                                TextButton.icon(
-                                  onPressed: _signInWithGoogle,
-                                  style: TextButton.styleFrom(
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 16, vertical: 8),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Explore the Mysterious World',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.white.withOpacity(0.8),
+                                    letterSpacing: 0.5,
                                   ),
-                                  icon: const FaIcon(
-                                    FontAwesomeIcons.google,
-                                    size: 20,
-                                  ),
-                                  label: const Text('Google Sign In'),
+                                  textAlign: TextAlign.center,
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 24),
-                            // Guest Sign-In
-                            Center(
-                              child: TextButton.icon(
-                                onPressed: _signInAsGuest,
-                                icon: const Icon(Icons.person_outline_rounded,
-                                  color: Colors.white,),
-                                label: Text(
-                                  'Continue as s Guest',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 16,
-                                  ),
+                          ),
+                          const SizedBox(height: 40),
+                          // Username TextField
+                          TextField(
+                            controller: _usernameController,
+                            style: const TextStyle(color: Colors.white),
+                            decoration: InputDecoration(
+                              labelText: 'Username',
+                              labelStyle:
+                                  const TextStyle(color: Colors.white70),
+                              prefixIcon: const Icon(Icons.person_rounded,
+                                  color: Colors.white70),
+                              filled: true,
+                              fillColor: Colors.white.withOpacity(0.1),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: BorderSide.none,
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: BorderSide(
+                                  color: Colors.white.withOpacity(0.2),
+                                  width: 1,
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: const BorderSide(
+                                  color: Colors.white,
+                                  width: 2,
                                 ),
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                          const SizedBox(height: 20),
+                          // Password TextField
+                          TextField(
+                            controller: _passwordController,
+                            obscureText: true,
+                            style: const TextStyle(color: Colors.white),
+                            decoration: InputDecoration(
+                              labelText: 'Password',
+                              labelStyle:
+                                  const TextStyle(color: Colors.white70),
+                              prefixIcon: const Icon(Icons.lock_rounded,
+                                  color: Colors.white70),
+                              filled: true,
+                              fillColor: Colors.white.withOpacity(0.1),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: BorderSide.none,
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: BorderSide(
+                                  color: Colors.white.withOpacity(0.2),
+                                  width: 1,
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: const BorderSide(
+                                  color: Colors.white,
+                                  width: 2,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 32),
+                          // Login Button
+                          AnimatedButton(
+                            onPressed: _login,
+                            text: 'Login',
+                            icon: Icons.login_rounded,
+                            color: const Color(0xFFC4A50D), // Dark yellow color
+                            textColor: Colors.white, // Blue text color
+                          ),
+                          const SizedBox(height: 24),
+                          // Alternative Login Options
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              TextButton.icon(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const RegisterScreen(),
+                                    ),
+                                  );
+                                },
+                                style: TextButton.styleFrom(
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 8),
+                                ),
+                                icon: const Icon(Icons.person_add_rounded,
+                                    color: Colors.white),
+                                label: const Text(
+                                  'Register Here',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              Container(
+                                width: 1,
+                                height: 24,
+                                color: Colors.white.withOpacity(0.2),
+                              ),
+                              TextButton.icon(
+                                onPressed: _signInWithGoogle,
+                                style: TextButton.styleFrom(
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 8),
+                                ),
+                                icon: const FaIcon(
+                                  FontAwesomeIcons.google,
+                                  size: 20,
+                                ),
+                                label: const Text('Google Sign In'),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 24),
+                          // Guest Sign-In
+                          Center(
+                            child: TextButton.icon(
+                              onPressed: _signInAsGuest,
+                              icon: const Icon(
+                                Icons.person_outline_rounded,
+                                color: Colors.white,
+                              ),
+                              label: const Text(
+                                'Continue as s Guest',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
