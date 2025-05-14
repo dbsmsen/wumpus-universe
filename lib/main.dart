@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'dart:html' as html;
-import 'screens/game_screen.dart';
+import 'dart:io' show exit;
 import 'screens/onboarding_screen.dart';
 import 'screens/rules_screen.dart';
-import 'screens/initial_onboarding_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/grid_selection_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'firebase_options.dart'; // import the generated file
+import 'package:wumpus_universe/screens/loading_screen.dart';
 
 Future<void> main() async {
   try {
@@ -23,18 +22,36 @@ Future<void> main() async {
       return null;
     });
 
-    // Initialize Firebase without waiting for Firestore test
+    // Initialize Firebase
     print('Initializing Firebase...');
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-    print('Firebase initialized successfully');
+    try {
+      // Ensure Flutter is initialized
+      WidgetsFlutterBinding.ensureInitialized();
+
+      FirebaseApp app;
+      try {
+        // Try to get existing app first
+        app = Firebase.app();
+        print('Using existing Firebase app: ${app.name}');
+      } catch (e) {
+        // If no app exists, initialize a new one
+        print('No existing Firebase app found, initializing new app...');
+        app = await Firebase.initializeApp(
+          options: DefaultFirebaseOptions.currentPlatform,
+        );
+        print('Firebase initialized successfully');
+      }
+
+      print('Firebase app name: ${app.name}');
+      print('Firebase project ID: ${app.options.projectId}');
+    } catch (e, stackTrace) {
+      print('Error during Firebase initialization: $e');
+      print('Stack trace: $stackTrace');
+      rethrow;
+    }
 
     // Run the app immediately after Firebase initialization
     runApp(const MyApp());
-
-    // Test Firestore connection in the background
-    _testFirestoreConnection();
   } catch (e, stackTrace) {
     print('Error during initialization: $e');
     print('Stack trace: $stackTrace');
@@ -53,31 +70,16 @@ Future<void> main() async {
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () {
-                  html.window.location.reload();
+                  // Exit the app
+                  exit(0);
                 },
-                child: const Text('Retry'),
+                child: const Text('Exit App'),
               ),
             ],
           ),
         ),
       ),
     ));
-  }
-}
-
-// Test Firestore connection in the background
-Future<void> _testFirestoreConnection() async {
-  try {
-    await FirebaseFirestore.instance
-        .collection('test')
-        .doc('connection_test')
-        .set({
-      'timestamp': FieldValue.serverTimestamp(),
-      'status': 'connected',
-    });
-    print('Firestore connection test successful');
-  } catch (e) {
-    print('Firestore connection test failed: $e');
   }
 }
 
@@ -99,17 +101,18 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Wumpus World',
+      title: 'Wumpus Universe',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primarySwatch: Colors.blue,
-        visualDensity: VisualDensity.adaptivePlatformDensity,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF1B0000),
+          brightness: Brightness.dark,
+        ),
+        useMaterial3: true,
       ),
-      // Start at login screen
-      home: const LoginScreen(),
+      home: const LoadingScreen(),
       routes: {
         '/grid_selection': (context) => const GridSelectionScreen(),
-        '/welcome': (context) => const InitialOnboardingScreen(),
         '/tutorial': (context) => const OnboardingScreen(),
         '/rules': (context) => const RulesScreen(),
       },
