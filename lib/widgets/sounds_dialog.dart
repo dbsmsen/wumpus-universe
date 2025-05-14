@@ -1,150 +1,116 @@
 import 'package:flutter/material.dart';
+import 'package:wumpus_universe/services/audio_manager.dart';
 
 class SoundsDialog extends StatefulWidget {
-  const SoundsDialog({super.key});
+  final AudioManager audioManager;
+  final Function(double) onVolumeChanged;
+  final bool isMusicPlaying;
+  final VoidCallback onToggleMusic;
+
+  const SoundsDialog({
+    super.key,
+    required this.audioManager,
+    required this.onVolumeChanged,
+    required this.isMusicPlaying,
+    required this.onToggleMusic,
+  });
 
   @override
   State<SoundsDialog> createState() => _SoundsDialogState();
 }
 
 class _SoundsDialogState extends State<SoundsDialog> {
-  bool _backgroundMusicEnabled = true;
-  bool _soundEffectsEnabled = true;
-  double _backgroundMusicVolume = 0.5;
-  double _soundEffectsVolume = 0.5;
+  late double _volume;
+  late bool _isMusicPlaying;
+
+  @override
+  void initState() {
+    super.initState();
+    _volume = widget.audioManager.backgroundMusicVolume;
+    _isMusicPlaying = widget.isMusicPlaying;
+  }
+
+  void _handleVolumeChange(double value) {
+    setState(() {
+      _volume = value;
+    });
+    widget.onVolumeChanged(value);
+  }
+
+  void _handleMusicToggle(bool value) {
+    setState(() {
+      _isMusicPlaying = value;
+    });
+    widget.onToggleMusic();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      child: Container(
-        width: MediaQuery.of(context).size.width * 0.7,
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Colors.deepPurple.shade600,
-              Colors.deepPurple.shade800,
+    return AlertDialog(
+      title: const Text('Sound Settings'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Background Music'),
+              Switch(
+                value: _isMusicPlaying,
+                onChanged: _handleMusicToggle,
+              ),
             ],
           ),
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.3),
-              blurRadius: 15,
-              offset: const Offset(0, 5),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            const Text(
-              'Sound Settings',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 24),
-            
-            // Background Music Toggle
-            SwitchListTile(
-              title: const Text(
-                'Background Music',
-                style: TextStyle(color: Colors.white),
-              ),
-              value: _backgroundMusicEnabled,
-              onChanged: (bool value) {
-                setState(() {
-                  _backgroundMusicEnabled = value;
-                });
-              },
-              activeColor: Colors.amber,
-            ),
-            
-            // Background Music Volume Slider
-            if (_backgroundMusicEnabled)
-              Slider(
-                value: _backgroundMusicVolume,
-                onChanged: (double value) {
-                  setState(() {
-                    _backgroundMusicVolume = value;
-                  });
-                },
-                activeColor: Colors.amber,
-                inactiveColor: Colors.white.withOpacity(0.3),
-                min: 0.0,
-                max: 1.0,
-              ),
-            
-            // Sound Effects Toggle
-            SwitchListTile(
-              title: const Text(
-                'Sound Effects',
-                style: TextStyle(color: Colors.white),
-              ),
-              value: _soundEffectsEnabled,
-              onChanged: (bool value) {
-                setState(() {
-                  _soundEffectsEnabled = value;
-                });
-              },
-              activeColor: Colors.amber,
-            ),
-            
-            // Sound Effects Volume Slider
-            if (_soundEffectsEnabled)
-              Slider(
-                value: _soundEffectsVolume,
-                onChanged: (double value) {
-                  setState(() {
-                    _soundEffectsVolume = value;
-                  });
-                },
-                activeColor: Colors.amber,
-                inactiveColor: Colors.white.withOpacity(0.3),
-                min: 0.0,
-                max: 1.0,
-              ),
-            
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () {
-                // TODO: Implement save sound settings logic
-                Navigator.of(context).pop();
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.amber,
-                foregroundColor: Colors.black,
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              const Icon(Icons.volume_down),
+              Expanded(
+                child: SliderTheme(
+                  data: SliderThemeData(
+                    trackHeight: 4.0,
+                    activeTrackColor: Colors.blue,
+                    inactiveTrackColor: Colors.grey[300],
+                    thumbColor: Colors.blue,
+                    overlayColor: Colors.blue.withOpacity(0.2),
+                    activeTickMarkColor: Colors.blue,
+                    inactiveTickMarkColor: Colors.grey[300],
+                    tickMarkShape: const RoundSliderTickMarkShape(
+                      tickMarkRadius: 4.0,
+                    ),
+                    thumbShape: const RoundSliderThumbShape(
+                      enabledThumbRadius: 8.0,
+                    ),
+                    overlayShape: const RoundSliderOverlayShape(
+                      overlayRadius: 16.0,
+                    ),
+                  ),
+                  child: Slider(
+                    value: _volume,
+                    min: 0.0,
+                    max: 1.0,
+                    divisions: 20,
+                    label: '${(_volume * 100).round()}%',
+                    onChanged: _handleVolumeChange,
+                  ),
                 ),
               ),
-              child: const Text(
-                'Save Settings',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
-        ),
+              const Icon(Icons.volume_up),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'Volume: ${(_volume * 100).round()}%',
+            style: const TextStyle(fontSize: 16),
+          ),
+        ],
       ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Close'),
+        ),
+      ],
     );
   }
-}
-
-// Function to show the sounds dialog from outside the widget
-void showSoundsDialog(BuildContext context) {
-  showDialog(
-    context: context,
-    builder: (context) => const SoundsDialog(),
-  );
 }
