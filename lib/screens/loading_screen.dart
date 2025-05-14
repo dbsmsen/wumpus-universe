@@ -13,6 +13,7 @@ class _LoadingScreenState extends State<LoadingScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _progressAnimation;
+  late Animation<double> _glowAnimation;
   bool _isLoading = true;
   final List<Particle> _particles = [];
   final math.Random _random = math.Random();
@@ -27,6 +28,13 @@ class _LoadingScreenState extends State<LoadingScreen>
     );
 
     _progressAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Curves.easeInOut,
+      ),
+    );
+
+    _glowAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(
       CurvedAnimation(
         parent: _controller,
         curve: Curves.easeInOut,
@@ -164,15 +172,75 @@ class _LoadingScreenState extends State<LoadingScreen>
                     SizedBox(
                       width: 300,
                       height: 10,
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(5),
-                        child: LinearProgressIndicator(
-                          value: _progressAnimation.value,
-                          backgroundColor: Colors.white.withOpacity(0.15),
-                          valueColor: const AlwaysStoppedAnimation<Color>(
-                            Colors.white,
+                      child: Stack(
+                        children: [
+                          // Background
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(5),
+                            child: Container(
+                              color: Colors.white.withOpacity(0.15),
+                            ),
                           ),
-                        ),
+                          // Glowing effect
+                          AnimatedBuilder(
+                            animation: _glowAnimation,
+                            builder: (context, child) {
+                              return Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(5),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.lightBlue.withOpacity(
+                                          0.7 * _glowAnimation.value),
+                                      blurRadius: 15 * _glowAnimation.value,
+                                      spreadRadius: 3 * _glowAnimation.value,
+                                    ),
+                                    BoxShadow(
+                                      color: Colors.lightBlue.withOpacity(
+                                          0.5 * _glowAnimation.value),
+                                      blurRadius: 25 * _glowAnimation.value,
+                                      spreadRadius: 5 * _glowAnimation.value,
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                          // Progress bar
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(5),
+                            child: AnimatedBuilder(
+                              animation: _progressAnimation,
+                              builder: (context, child) {
+                                return Container(
+                                  width: 300 * _progressAnimation.value,
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        Colors.lightBlue.withOpacity(0.8),
+                                        Colors.lightBlue.withOpacity(1.0),
+                                      ],
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color:
+                                            Colors.lightBlue.withOpacity(0.6),
+                                        blurRadius: 12,
+                                        spreadRadius: 2,
+                                      ),
+                                      BoxShadow(
+                                        color:
+                                            Colors.lightBlue.withOpacity(0.4),
+                                        blurRadius: 20,
+                                        spreadRadius: 4,
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
