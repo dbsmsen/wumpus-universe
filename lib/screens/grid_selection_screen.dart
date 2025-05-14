@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:wumpus_universe/screens/game_screen.dart';
 import 'package:wumpus_universe/screens/leaderboard_screen.dart';
-import 'package:wumpus_universe/screens/settings_screen.dart';
 import 'package:wumpus_universe/screens/game_mechanics_screen.dart';
 import 'package:wumpus_universe/screens/point_system_screen.dart';
 import 'package:wumpus_universe/widgets/about_dialog.dart';
 import 'package:wumpus_universe/widgets/logout_dialog.dart';
 import 'package:wumpus_universe/widgets/rules_dialog.dart';
-import 'package:wumpus_universe/widgets/section_card.dart';
 import 'package:wumpus_universe/widgets/theme_dialog.dart';
 import 'package:wumpus_universe/widgets/tutorial_dialog.dart';
 import 'package:wumpus_universe/widgets/sounds_dialog.dart';
@@ -15,6 +13,7 @@ import 'package:wumpus_universe/widgets/app_settings_dialog.dart';
 import 'package:wumpus_universe/widgets/info_tooltip.dart';
 import 'package:wumpus_universe/models/game_mode.dart';
 import 'package:wumpus_universe/models/difficulty_level.dart';
+import 'package:wumpus_universe/services/audio_manager.dart';
 
 class GridSelectionScreen extends StatefulWidget {
   const GridSelectionScreen({super.key});
@@ -28,6 +27,8 @@ class _GridSelectionScreenState extends State<GridSelectionScreen>
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
+  final AudioManager _audioManager = AudioManager();
+  bool _isFirstLoad = true;
 
   // Predefined grid sizes
   final List<List<int>> predefinedGrids = [
@@ -43,6 +44,15 @@ class _GridSelectionScreenState extends State<GridSelectionScreen>
   // Selected game mode and difficulty
   GameMode? selectedGameMode;
   DifficultyLevel? selectedDifficulty;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_isFirstLoad) {
+      _isFirstLoad = false;
+      _initializeAudio();
+    }
+  }
 
   @override
   void initState() {
@@ -70,11 +80,37 @@ class _GridSelectionScreenState extends State<GridSelectionScreen>
     );
 
     _animationController.forward();
+    // Initialize audio after a short delay to ensure Flutter is ready
+    Future.delayed(const Duration(milliseconds: 500), () {
+      _initializeAudio();
+    });
+  }
+
+  Future<void> _initializeAudio() async {
+    await _audioManager.initialize();
+  }
+
+  Future<void> _playClickSound() async {
+    await _audioManager.playSoundEffect('sounds/click.wav');
+  }
+
+  Future<void> _playGridSelectionSound() async {
+    await _audioManager.playSoundEffect('sounds/click.wav');
+  }
+
+  Future<void> _toggleMusic() async {
+    if (_audioManager.isMusicPlaying) {
+      await _audioManager.pauseBackgroundMusic();
+    } else {
+      await _audioManager.playBackgroundMusic();
+    }
+    setState(() {});
   }
 
   @override
   void dispose() {
     _animationController.dispose();
+    _audioManager.dispose();
     super.dispose();
   }
 
@@ -115,13 +151,15 @@ class _GridSelectionScreenState extends State<GridSelectionScreen>
         ),
         actions: [
           TextButton(
-            onPressed: () {
+            onPressed: () async {
+              await _playClickSound();
               Navigator.of(context).pop();
             },
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
+              await _playClickSound();
               // Validate input
               final rows = int.tryParse(rowController.text);
               final cols = int.tryParse(colController.text);
@@ -157,7 +195,7 @@ class _GridSelectionScreenState extends State<GridSelectionScreen>
   }
 
   // Navigate to game screen with selected grid size
-  void _startGame(int rows, int columns) {
+  Future<void> _startGame(int rows, int columns) async {
     if (selectedGameMode == null || selectedDifficulty == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -167,6 +205,11 @@ class _GridSelectionScreenState extends State<GridSelectionScreen>
       );
       return;
     }
+
+    // Stop background music before navigation
+    await AudioManager().enterGameScreen();
+
+    if (!mounted) return;
 
     Navigator.push(
       context,
@@ -223,7 +266,8 @@ class _GridSelectionScreenState extends State<GridSelectionScreen>
                 subtitle: const Text('Learn how to play',
                     style: TextStyle(color: Colors.black54)),
                 tileColor: Colors.white,
-                onTap: () {
+                onTap: () async {
+                  await _playClickSound();
                   Navigator.pop(context);
                   Navigator.push(
                     context,
@@ -240,7 +284,8 @@ class _GridSelectionScreenState extends State<GridSelectionScreen>
                 subtitle: const Text('Scoring rules and penalties',
                     style: TextStyle(color: Colors.black54)),
                 tileColor: Colors.white,
-                onTap: () {
+                onTap: () async {
+                  await _playClickSound();
                   Navigator.pop(context);
                   Navigator.push(
                     context,
@@ -257,7 +302,8 @@ class _GridSelectionScreenState extends State<GridSelectionScreen>
                 subtitle: const Text('Learn how to play',
                     style: TextStyle(color: Colors.black54)),
                 tileColor: Colors.white,
-                onTap: () {
+                onTap: () async {
+                  await _playClickSound();
                   Navigator.pop(context);
                   _showTutorialDialog(context);
                 },
@@ -269,7 +315,8 @@ class _GridSelectionScreenState extends State<GridSelectionScreen>
                 subtitle: const Text('View high scores',
                     style: TextStyle(color: Colors.black54)),
                 tileColor: Colors.white,
-                onTap: () {
+                onTap: () async {
+                  await _playClickSound();
                   Navigator.pop(context);
                   Navigator.push(
                     context,
@@ -286,7 +333,8 @@ class _GridSelectionScreenState extends State<GridSelectionScreen>
                 subtitle: const Text('Manage preferences',
                     style: TextStyle(color: Colors.black54)),
                 tileColor: Colors.white,
-                onTap: () {
+                onTap: () async {
+                  await _playClickSound();
                   Navigator.pop(context);
                   showAppSettingsDialog(context);
                 },
@@ -298,9 +346,10 @@ class _GridSelectionScreenState extends State<GridSelectionScreen>
                 subtitle: const Text('Audio settings',
                     style: TextStyle(color: Colors.black54)),
                 tileColor: Colors.white,
-                onTap: () {
+                onTap: () async {
+                  await _playClickSound();
                   Navigator.pop(context);
-                  showSoundsDialog(context);
+                  _showSoundsDialog(context);
                 },
               ),
               ListTile(
@@ -310,7 +359,8 @@ class _GridSelectionScreenState extends State<GridSelectionScreen>
                 subtitle: const Text('Customize appearance',
                     style: TextStyle(color: Colors.black54)),
                 tileColor: Colors.white,
-                onTap: () {
+                onTap: () async {
+                  await _playClickSound();
                   Navigator.pop(context);
                   _showThemeDialog(context);
                 },
@@ -322,7 +372,8 @@ class _GridSelectionScreenState extends State<GridSelectionScreen>
                 subtitle: const Text('Rate on Google Play',
                     style: TextStyle(color: Colors.black54)),
                 tileColor: Colors.white,
-                onTap: () {
+                onTap: () async {
+                  await _playClickSound();
                   Navigator.pop(context);
                   // TODO: Add Google Play rating functionality
                 },
@@ -334,7 +385,8 @@ class _GridSelectionScreenState extends State<GridSelectionScreen>
                 subtitle: const Text('Game information',
                     style: TextStyle(color: Colors.black54)),
                 tileColor: Colors.white,
-                onTap: () {
+                onTap: () async {
+                  await _playClickSound();
                   Navigator.pop(context);
                   _showAboutDialog(context);
                 },
@@ -347,7 +399,8 @@ class _GridSelectionScreenState extends State<GridSelectionScreen>
                 subtitle: const Text('Exit the game',
                     style: TextStyle(color: Colors.black54)),
                 tileColor: Colors.white,
-                onTap: () {
+                onTap: () async {
+                  await _playClickSound();
                   Navigator.pop(context);
                   _showLogoutDialog(context);
                 },
@@ -364,6 +417,17 @@ class _GridSelectionScreenState extends State<GridSelectionScreen>
           color: Colors.white,
           size: 32,
         ),
+        actions: [
+          IconButton(
+            icon: Icon(
+              _audioManager.isMusicPlaying ? Icons.volume_up : Icons.volume_off,
+              color: _audioManager.isMusicPlaying ? Colors.white : Colors.red,
+              size: 28,
+            ),
+            onPressed: _toggleMusic,
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       extendBodyBehindAppBar: true,
       body: Container(
@@ -436,7 +500,8 @@ class _GridSelectionScreenState extends State<GridSelectionScreen>
                                   return InfoTooltip(
                                     message: mode.description,
                                     child: ElevatedButton.icon(
-                                      onPressed: () {
+                                      onPressed: () async {
+                                        await _playClickSound();
                                         setState(() {
                                           selectedGameMode = mode;
                                         });
@@ -489,7 +554,8 @@ class _GridSelectionScreenState extends State<GridSelectionScreen>
                                   return InfoTooltip(
                                     message: level.description,
                                     child: ElevatedButton(
-                                      onPressed: () {
+                                      onPressed: () async {
+                                        await _playClickSound();
                                         setState(() {
                                           selectedDifficulty = level;
                                         });
@@ -547,7 +613,11 @@ class _GridSelectionScreenState extends State<GridSelectionScreen>
                                   ),
                                   elevation: 4,
                                 ),
-                                onPressed: () => _startGame(grid[0], grid[1]),
+                                onPressed: () async {
+                                  await _playClickSound();
+                                  _playGridSelectionSound();
+                                  _startGame(grid[0], grid[1]);
+                                },
                                 child: Text(
                                   '${grid[0]} x ${grid[1]}',
                                   style: const TextStyle(
@@ -584,7 +654,10 @@ class _GridSelectionScreenState extends State<GridSelectionScreen>
                               ),
                               elevation: 4,
                             ),
-                            onPressed: _showCustomGridDialog,
+                            onPressed: () async {
+                              await _playClickSound();
+                              _showCustomGridDialog();
+                            },
                             child: Text(
                               'Custom (${customGridSize[0]} x ${customGridSize[1]})',
                               style: const TextStyle(
@@ -607,7 +680,8 @@ class _GridSelectionScreenState extends State<GridSelectionScreen>
                               ),
                               elevation: 4,
                             ),
-                            onPressed: () {
+                            onPressed: () async {
+                              await _playClickSound();
                               if (selectedGameMode == null ||
                                   selectedDifficulty == null) {
                                 ScaffoldMessenger.of(context).showSnackBar(
@@ -677,6 +751,21 @@ class _GridSelectionScreenState extends State<GridSelectionScreen>
     showDialog(
       context: context,
       builder: (context) => const LogoutDialog(),
+    );
+  }
+
+  void _showSoundsDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => SoundsDialog(
+        audioManager: _audioManager,
+        onVolumeChanged: (volume) async {
+          await _audioManager.setBackgroundMusicVolume(volume);
+          setState(() {});
+        },
+        isMusicPlaying: _audioManager.isMusicPlaying,
+        onToggleMusic: _toggleMusic,
+      ),
     );
   }
 }
