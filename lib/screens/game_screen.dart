@@ -21,6 +21,7 @@ import '../screens/leaderboard_screen.dart';
 import '../widgets/game_actions.dart';
 import '../models/game_mode.dart';
 import '../models/difficulty_level.dart';
+import 'package:audioplayers/audioplayers.dart';
 
 class GameScreen extends StatefulWidget {
   final int rows;
@@ -42,10 +43,11 @@ class GameScreen extends StatefulWidget {
 
 class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   late GameController _gameController;
-  Map<String, AnimationController> _cellAnimations = {};
+  final Map<String, AnimationController> _cellAnimations = {};
   Timer? _gameTimer;
   Duration _gameDuration = Duration.zero;
   WumpusAISolver? _aiSolver;
+  final AudioPlayer _audioPlayer = AudioPlayer();
 
   @override
   void initState() {
@@ -77,7 +79,30 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     _cellAnimations.forEach((key, controller) {
       controller.dispose();
     });
+    _audioPlayer.dispose();
     super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant GameScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _playDeathSoundIfNeeded();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _playDeathSoundIfNeeded();
+  }
+
+  void _playDeathSoundIfNeeded() {
+    if (_gameController.isGameOver && !_gameController.agent.hasWon) {
+      if (_gameController.lastDeathCause == DeathCause.pit) {
+        _playPitSound();
+      } else if (_gameController.lastDeathCause == DeathCause.wumpus) {
+        _playWumpusDeathSound();
+      }
+    }
   }
 
   Future<void> _showNameInputDialog() async {
@@ -179,6 +204,23 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     );
   }
 
+  Future<void> _playPitSound() async {
+    await _audioPlayer.play(AssetSource('sounds/pit.wav'));
+  }
+
+  Future<void> _playWumpusDeathSound() async {
+    await _audioPlayer.play(AssetSource('sounds/wumpus_death.wav'));
+  }
+
+  void _handleAgentDeath(bool killedByWumpus) {
+    if (killedByWumpus) {
+      _playWumpusDeathSound();
+    } else {
+      _playPitSound();
+    }
+    // Show game over dialog or navigate to a game over screen
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -221,10 +263,10 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       ),
       appBar: AppBar(
         title: const Text(
-          'Wumpus Universe Game',
+          'The Wumpus Universe',
           style: TextStyle(color: Colors.white),
         ),
-        backgroundColor: Colors.deepPurple.withOpacity(0.8),
+        backgroundColor: Colors.deepPurple,
         elevation: 0,
         iconTheme: const IconThemeData(
           color: Colors.white,
@@ -240,7 +282,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                 return AlertDialog(
                   title: const Text('Leave Game?'),
                   content: const Text(
-                      'Are you sure you want to leave the current game? Your progress will be lost.'),
+                      'Are you sure you want to leave the current game?'),
                   actions: [
                     TextButton(
                       onPressed: () {
@@ -266,14 +308,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       extendBodyBehindAppBar: true,
       body: Container(
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Colors.deepPurple.shade800,
-              Colors.deepPurple.shade600,
-            ],
-          ),
+          color: Colors.deepPurple,
         ),
         child: SafeArea(
           child: Column(
@@ -282,7 +317,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                 child: Container(
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
                   ),
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -301,7 +335,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(
+                            const Icon(
                               Icons.timer,
                               color: Colors.white,
                               size: 20,
@@ -333,7 +367,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(
+                            const Icon(
                               Icons.score,
                               color: Colors.white,
                               size: 20,
@@ -410,40 +444,5 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     final minutes = twoDigits(duration.inMinutes.remainder(60));
     final seconds = twoDigits(duration.inSeconds.remainder(60));
     return '$hours:$minutes:$seconds';
-  }
-
-  void _showTutorialDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => const TutorialDialog(),
-    );
-  }
-
-  void _showRulesDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => const RulesDialog(),
-    );
-  }
-
-  void _showThemeDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => const ThemeDialog(),
-    );
-  }
-
-  void _showAboutDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => const GameAboutDialog(),
-    );
-  }
-
-  void _showLogoutDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => const LogoutDialog(),
-    );
   }
 }
