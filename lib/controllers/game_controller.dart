@@ -1,11 +1,12 @@
 import 'dart:async';
-import 'dart:math';
 import '../models/agent.dart';
-import '../models/cell.dart';
 import '../models/direction.dart' as dir;
 import '../models/grid.dart';
 import '../models/game_mode.dart';
 import '../models/difficulty_level.dart';
+
+// Add an enum for death cause
+enum DeathCause { pit, wumpus }
 
 class GameController {
   late Agent agent;
@@ -20,6 +21,7 @@ class GameController {
   final int columns;
   final GameMode gameMode;
   final DifficultyLevel difficultyLevel;
+  DeathCause? lastDeathCause;
 
   GameController({
     required this.rows,
@@ -84,12 +86,9 @@ class GameController {
   }
 
   void move(dir.Direction direction) {
-    if (isGameOver) return; // Only check for game over
-
-    // Check if move is valid within grid boundaries
+    if (isGameOver) return;
     int newX = agent.x;
     int newY = agent.y;
-
     switch (direction) {
       case dir.Direction.up:
         if (newY > 0) newY--;
@@ -104,42 +103,26 @@ class GameController {
         if (newX > 0) newX--;
         break;
     }
-
-    // Only move if the new position is different
     if (newX != agent.x || newY != agent.y) {
       agent.move(direction);
-
-      // Mark current cell as visited
       grid.cells[agent.y][agent.x].visited = true;
-
-      // Check for hazards in current cell
       final currentCell = grid.cells[agent.y][agent.x];
-
-      // Check for gold
       if (currentCell.hasGold) {
         agent.pickGold();
         gameMessage = 'You found the gold! Now return to the start!';
       }
-
-      // Check for Wumpus
       if (currentCell.hasWumpus && !currentCell.isWumpusDead) {
-        gameOverLose('The Wumpus got you!');
+        gameOverLose('The Wumpus got you!', DeathCause.wumpus);
         return;
       }
-
-      // Check for pit
       if (currentCell.hasPit) {
-        gameOverLose('You fell into a pit!');
+        gameOverLose('You fell into a pit!', DeathCause.pit);
         return;
       }
-
-      // Check win condition
       if (agent.hasGold && agent.x == 0 && agent.y == 0) {
         gameOverWin();
         return;
       }
-
-      // Update sensory indicators for neighboring cells
       updateSensoryIndicators();
     }
   }
@@ -247,12 +230,13 @@ class GameController {
     revealAllPositions();
   }
 
-  void gameOverLose(String reason) {
+  void gameOverLose(String reason, [DeathCause? cause]) {
     stopGameTimer();
     agent.die();
     gameMessage = reason;
     isGameOver = true;
     agent.hasWon = false;
+    lastDeathCause = cause;
     revealAllPositions();
   }
 
