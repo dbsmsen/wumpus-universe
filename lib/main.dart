@@ -2,11 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:io' show exit;
 import 'screens/onboarding_screen.dart';
-import 'screens/rules_screen.dart';
 import 'screens/grid_selection_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'firebase_options.dart'; // import the generated file
+import 'core/config/firebase_options.dart'; // import the generated file
 import 'package:wumpus_universe/screens/loading_screen.dart';
 
 Future<void> main() async {
@@ -113,7 +112,6 @@ class MyApp extends StatelessWidget {
       routes: {
         '/grid_selection': (context) => const GridSelectionScreen(),
         '/tutorial': (context) => const OnboardingScreen(),
-        '/rules': (context) => const RulesScreen(),
       },
     );
   }
