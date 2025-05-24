@@ -52,23 +52,27 @@ class GameActions extends StatelessWidget {
                   'Shoot Arrow',
                   Colors.red.shade100,
                   isGameOver || !hasArrow ? null : onShootArrow,
+                  textColor: Colors.white,
                 ),
                 _buildActionButton(
                   'AI Solve',
                   Colors.purple.shade100,
                   isGameOver || autoMoveEnabled ? null : onAutoSolve,
+                  textColor: Colors.white,
                 ),
                 if (isGameOver)
                   _buildActionButton(
                     'New Game',
                     Colors.green.shade100,
                     onNewGame,
+                    textColor: Colors.white,
                   )
                 else
                   _buildActionButton(
                     'Restart',
                     Colors.amber.shade100,
                     onRestart,
+                    textColor: Colors.white,
                   ),
               ],
             ),
@@ -78,7 +82,7 @@ class GameActions extends StatelessWidget {
     );
   }
 
-  Widget _buildActionButton(String text, Color color, VoidCallback? onPressed) {
+  Widget _buildActionButton(String text, Color color, VoidCallback? onPressed, {Color textColor = Colors.black}) {
     return SizedBox(
       width: 100,
       child: ElevatedButton(
@@ -90,7 +94,13 @@ class GameActions extends StatelessWidget {
             borderRadius: BorderRadius.circular(8),
           ),
         ),
-        child: Text(text),
+        child: Text(
+          text,
+          style: TextStyle(
+            color: textColor,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ),
     );
   }

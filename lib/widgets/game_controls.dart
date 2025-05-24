@@ -40,7 +40,7 @@ class GameControls extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 IconButton(
-                  icon: Icon(_directionIcon(dir.Direction.up), size: 32),
+                  icon: Icon(_directionIcon(dir.Direction.up), size: 32, color: Colors.black),
                   onPressed: isGameOver || autoMoveEnabled
                       ? null
                       : () => onMove(dir.Direction.up),
@@ -55,7 +55,7 @@ class GameControls extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     IconButton(
-                      icon: Icon(_directionIcon(dir.Direction.left), size: 32),
+                      icon: Icon(_directionIcon(dir.Direction.left), size: 32, color: Colors.black),
                       onPressed: isGameOver || autoMoveEnabled
                           ? null
                           : () => onMove(dir.Direction.left),
@@ -68,7 +68,7 @@ class GameControls extends StatelessWidget {
                     ),
                     const SizedBox(width: 32),
                     IconButton(
-                      icon: Icon(_directionIcon(dir.Direction.right), size: 32),
+                      icon: Icon(_directionIcon(dir.Direction.right), size: 32, color: Colors.black),
                       onPressed: isGameOver || autoMoveEnabled
                           ? null
                           : () => onMove(dir.Direction.right),
@@ -82,7 +82,7 @@ class GameControls extends StatelessWidget {
                   ],
                 ),
                 IconButton(
-                  icon: Icon(_directionIcon(dir.Direction.down), size: 32),
+                  icon: Icon(_directionIcon(dir.Direction.down), size: 32, color: Colors.black),
                   onPressed: isGameOver || autoMoveEnabled
                       ? null
                       : () => onMove(dir.Direction.down),

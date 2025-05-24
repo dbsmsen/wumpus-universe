@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../models/cell.dart';
 import '../models/agent.dart';
 import '../models/grid.dart';
 
@@ -25,9 +24,9 @@ class _GameGridState extends State<GameGrid> with TickerProviderStateMixin {
   @override
   void dispose() {
     // Dispose all animation controllers
-    widget.cellAnimations.values.forEach((controller) {
+    for (var controller in widget.cellAnimations.values) {
       controller.dispose();
-    });
+    }
     widget.cellAnimations.clear();
     super.dispose();
   }

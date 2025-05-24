@@ -15,11 +15,10 @@ class GameMode {
     required this.settings,
   });
 
-  static const List<GameMode> modes = [
+  static final List<GameMode> modes = [
     GameMode(
       name: 'Classic',
-      description:
-          'Traditional Wumpus World gameplay with no time limit. Explore the cave and find the gold while avoiding the Wumpus.',
+      description: 'Traditional Wumpus World gameplay with no time limit. Explore the cave and find the gold while avoiding the Wumpus.',
       icon: Icons.sports_esports,
       color: Colors.blue,
       settings: {
@@ -27,12 +26,13 @@ class GameMode {
         'wumpusCount': 1,
         'goldCount': 1,
         'pitCount': 3,
+        'gridSize': 4,
+        'arrows': 3,
       },
     ),
     GameMode(
       name: 'Time Attack',
-      description:
-          'Race against the clock! Find the gold before time runs out. Each move costs precious seconds.',
+      description: 'Race against the clock! Find the gold before time runs out. Each move costs precious seconds.',
       icon: Icons.timer,
       color: Colors.orange,
       settings: {
@@ -41,6 +41,8 @@ class GameMode {
         'wumpusCount': 1,
         'goldCount': 1,
         'pitCount': 3,
+        'gridSize': 4,
+        'arrows': 3,
       },
     ),
     GameMode(
@@ -53,12 +55,13 @@ class GameMode {
         'wumpusCount': 1,
         'goldCount': 3,
         'pitCount': 3,
+        'gridSize': 5,
+        'arrows': 4,
       },
     ),
     GameMode(
       name: 'Wumpus Hunter',
-      description:
-          'Hunt down multiple Wumpuses. Be careful, they\'re more aggressive!',
+      description: 'Hunt down multiple Wumpuses. Be careful, they\'re more aggressive!',
       icon: Icons.gps_fixed,
       color: Colors.purple,
       settings: {
@@ -66,6 +69,8 @@ class GameMode {
         'wumpusCount': 3,
         'goldCount': 1,
         'pitCount': 2,
+        'gridSize': 6,
+        'arrows': 3,
         'wumpusAggressive': true,
       },
     ),
