@@ -345,7 +345,7 @@ class GameMechanicsScreen extends StatelessWidget {
                             ],
                           ),
                         ))
-                    .toList(),
+                    ,
               ],
             ),
           ),
