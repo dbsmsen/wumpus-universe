@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'dart:io' show exit;
 import 'screens/onboarding_screen.dart';
 import 'screens/rules_screen.dart';
-import 'screens/login_screen.dart';
 import 'screens/grid_selection_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
