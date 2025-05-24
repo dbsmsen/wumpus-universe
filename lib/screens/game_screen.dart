@@ -1,23 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'dart:math';
-import '../models/agent.dart';
-import '../models/cell.dart';
-import '../models/direction.dart' as dir;
-import '../models/grid.dart';
 import '../models/wumpus_ai_solver.dart';
 import '../controllers/game_controller.dart';
 import '../widgets/game_grid.dart';
 import '../widgets/game_controls.dart';
 import '../widgets/game_info_panel.dart';
-import '../widgets/about_dialog.dart';
-import '../widgets/logout_dialog.dart';
-import '../widgets/rules_dialog.dart';
-import '../widgets/theme_dialog.dart';
-import '../widgets/tutorial_dialog.dart';
-import '../widgets/sounds_dialog.dart';
-import '../widgets/app_settings_dialog.dart';
-import '../screens/leaderboard_screen.dart';
 import '../widgets/game_actions.dart';
 import '../models/game_mode.dart';
 import '../models/difficulty_level.dart';
@@ -280,9 +267,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
               context: context,
               builder: (BuildContext context) {
                 return AlertDialog(
-                  title: const Text('Leave Game?'),
+                  title: const Text('Are you sure?'),
                   content: const Text(
-                      'Are you sure you want to leave the current game?'),
+                      'You want to leave the current game?'),
                   actions: [
                     TextButton(
                       onPressed: () {
