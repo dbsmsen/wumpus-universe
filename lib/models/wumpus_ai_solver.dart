@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math';
 import '../models/agent.dart';
 import '../models/cell.dart';
 import '../models/direction.dart' as dir;
