@@ -117,9 +117,9 @@ class _GridSelectionScreenState extends State<GridSelectionScreen>
   // Show dialog for custom grid size input
   void _showCustomGridDialog() {
     final rowController =
-        TextEditingController(text: customGridSize[0].toString());
+    TextEditingController(text: customGridSize[0].toString());
     final colController =
-        TextEditingController(text: customGridSize[1].toString());
+    TextEditingController(text: customGridSize[1].toString());
 
     showDialog(
       context: context,
@@ -342,7 +342,7 @@ class _GridSelectionScreenState extends State<GridSelectionScreen>
               ListTile(
                 leading: const Icon(Icons.music_note, color: Colors.purple),
                 title:
-                    const Text('Sounds', style: TextStyle(color: Colors.black)),
+                const Text('Sounds', style: TextStyle(color: Colors.black)),
                 subtitle: const Text('Audio settings',
                     style: TextStyle(color: Colors.black54)),
                 tileColor: Colors.white,
@@ -355,7 +355,7 @@ class _GridSelectionScreenState extends State<GridSelectionScreen>
               ListTile(
                 leading: const Icon(Icons.palette, color: Colors.orange),
                 title:
-                    const Text('Theme', style: TextStyle(color: Colors.black)),
+                const Text('Theme', style: TextStyle(color: Colors.black)),
                 subtitle: const Text('Customize appearance',
                     style: TextStyle(color: Colors.black54)),
                 tileColor: Colors.white,
@@ -381,7 +381,7 @@ class _GridSelectionScreenState extends State<GridSelectionScreen>
               ListTile(
                 leading: const Icon(Icons.info_outline, color: Colors.indigo),
                 title:
-                    const Text('About', style: TextStyle(color: Colors.black)),
+                const Text('About', style: TextStyle(color: Colors.black)),
                 subtitle: const Text('Game information',
                     style: TextStyle(color: Colors.black54)),
                 tileColor: Colors.white,
@@ -395,7 +395,7 @@ class _GridSelectionScreenState extends State<GridSelectionScreen>
               ListTile(
                 leading: const Icon(Icons.logout, color: Colors.red),
                 title:
-                    const Text('Logout', style: TextStyle(color: Colors.black)),
+                const Text('Logout', style: TextStyle(color: Colors.black)),
                 subtitle: const Text('Exit the game',
                     style: TextStyle(color: Colors.black54)),
                 tileColor: Colors.white,
@@ -510,9 +510,9 @@ class _GridSelectionScreenState extends State<GridSelectionScreen>
                                       label: Text(mode.name),
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor:
-                                            selectedGameMode == mode
-                                                ? mode.color
-                                                : mode.color.withOpacity(0.5),
+                                        selectedGameMode == mode
+                                            ? mode.color
+                                            : mode.color.withOpacity(0.5),
                                         foregroundColor: Colors.white,
                                         padding: const EdgeInsets.symmetric(
                                           horizontal: 16,
@@ -520,7 +520,7 @@ class _GridSelectionScreenState extends State<GridSelectionScreen>
                                         ),
                                         shape: RoundedRectangleBorder(
                                           borderRadius:
-                                              BorderRadius.circular(8),
+                                          BorderRadius.circular(8),
                                         ),
                                       ),
                                     ),
@@ -562,9 +562,9 @@ class _GridSelectionScreenState extends State<GridSelectionScreen>
                                       },
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor:
-                                            selectedDifficulty == level
-                                                ? level.color
-                                                : level.color.withOpacity(0.5),
+                                        selectedDifficulty == level
+                                            ? level.color
+                                            : level.color.withOpacity(0.5),
                                         foregroundColor: Colors.white,
                                         padding: const EdgeInsets.symmetric(
                                           horizontal: 16,
@@ -572,7 +572,7 @@ class _GridSelectionScreenState extends State<GridSelectionScreen>
                                         ),
                                         shape: RoundedRectangleBorder(
                                           borderRadius:
-                                              BorderRadius.circular(8),
+                                          BorderRadius.circular(8),
                                         ),
                                       ),
                                       child: Text(level.name),

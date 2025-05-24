@@ -1,5 +1,6 @@
 import 'package:audioplayers/audioplayers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class AudioManager {
   static final AudioManager _instance = AudioManager._internal();
@@ -10,9 +11,12 @@ class AudioManager {
   bool _isMusicPlaying = false;
   double _backgroundMusicVolume = 0.5;
   double _soundEffectVolume = 0.3;
-  String? _currentBackgroundMusic;
+  String _currentBackgroundMusic = 'sounds/grid_screen.wav';
   bool _isGameScreen = false;
   bool _isPlayingSoundEffect = false;
+  bool _isMuted = false;
+
+  bool get isMuted => _isMuted;
 
   bool get isMusicPlaying => _isMusicPlaying;
   double get backgroundMusicVolume => _backgroundMusicVolume;
@@ -22,47 +26,109 @@ class AudioManager {
     try {
       print('Initializing AudioManager...');
 
-      // Load saved volume settings
+      // Load saved volume and mute settings
       final prefs = await SharedPreferences.getInstance();
-      _backgroundMusicVolume =
-          prefs.getDouble('background_music_volume') ?? 0.5;
+      _backgroundMusicVolume = prefs.getDouble('background_music_volume') ?? 0.5;
       _soundEffectVolume = prefs.getDouble('sound_effect_volume') ?? 0.3;
+      _isMuted = prefs.getBool('is_muted') ?? false;
 
       // Initialize audio player
       await _audioPlayer.setReleaseMode(ReleaseMode.loop);
-      await _audioPlayer.setVolume(_backgroundMusicVolume);
-      await _audioPlayer.setSource(AssetSource('sounds/grid_screen.wav'));
-      _currentBackgroundMusic = 'sounds/grid_screen.wav';
-      await _audioPlayer.resume();
-
-      _isMusicPlaying = true;
+      await _audioPlayer.setVolume(_isMuted ? 0 : _backgroundMusicVolume);
+      await _audioPlayer.setSource(AssetSource(_currentBackgroundMusic));
+      
+      // Set initial state
+      _isMusicPlaying = false;
+      
+      // Start playing if not muted and not on web
+      if (!kIsWeb && !_isMuted) {
+        await playBackgroundMusic();
+      }
+      
       print('AudioManager initialized successfully');
     } catch (e) {
       print('Error initializing AudioManager: $e');
+      _isMusicPlaying = false;
+      _isMuted = true; // Default to muted on error
     }
   }
 
   Future<void> playBackgroundMusic() async {
-    if (!_isMusicPlaying && !_isGameScreen && !_isPlayingSoundEffect) {
+    if (!_isMusicPlaying && !_isGameScreen && !_isPlayingSoundEffect && !_isMuted) {
       try {
+        print('Attempting to play background music...');
+        // Always re-initialize to ensure clean state
+        await _audioPlayer.stop();
         await _audioPlayer.setReleaseMode(ReleaseMode.loop);
         await _audioPlayer.setVolume(_backgroundMusicVolume);
+        await _audioPlayer.setSource(AssetSource(_currentBackgroundMusic));
+        
+        // Small delay to ensure audio system is ready
+        await Future.delayed(const Duration(milliseconds: 100));
         await _audioPlayer.resume();
         _isMusicPlaying = true;
+        print('Background music started successfully');
       } catch (e) {
         print('Error playing background music: $e');
+        _isMusicPlaying = false;
+        // Try to recover by resetting the audio player
+        try {
+          await _audioPlayer.stop();
+          await _audioPlayer.release();
+        } catch (e2) {
+          print('Error during recovery: $e2');
+        }
       }
+    } else {
+      print('Skipping playback - Playing: $_isMusicPlaying, GameScreen: $_isGameScreen, SoundEffect: $_isPlayingSoundEffect, Muted: $_isMuted');
     }
   }
 
   Future<void> pauseBackgroundMusic() async {
     if (_isMusicPlaying && !_isPlayingSoundEffect) {
       try {
-        await _audioPlayer.pause();
+        print('Attempting to pause background music...');
+        await _audioPlayer.stop(); // Use stop instead of pause for more reliable state
         _isMusicPlaying = false;
+        print('Background music stopped successfully');
       } catch (e) {
-        print('Error pausing background music: $e');
+        print('Error stopping background music: $e');
+        _isMusicPlaying = true; // Revert state if stop fails
       }
+    }
+  }
+
+  Future<void> toggleMute() async {
+    try {
+      print('Current state - Muted: $_isMuted, Playing: $_isMusicPlaying');
+      _isMuted = !_isMuted;
+      print('Toggling mute state to: ${_isMuted ? 'muted' : 'unmuted'}');
+      
+      // Save mute state
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('is_muted', _isMuted);
+
+      if (_isMuted) {
+        // When muting, stop the audio completely
+        print('Stopping audio and setting volume to 0');
+        await _audioPlayer.setVolume(0);
+        await _audioPlayer.stop();
+        _isMusicPlaying = false;
+      } else {
+        // When unmuting, reinitialize and start playing
+        print('Unmuting: Setting volume and restarting playback');
+        await _audioPlayer.setVolume(_backgroundMusicVolume);
+        await _audioPlayer.setSource(AssetSource(_currentBackgroundMusic));
+        await _audioPlayer.setReleaseMode(ReleaseMode.loop);
+        await _audioPlayer.resume();
+        _isMusicPlaying = true;
+      }
+      print('Audio state updated - Muted: $_isMuted, Playing: $_isMusicPlaying');
+    } catch (e) {
+      print('Error toggling mute: $e');
+      // Revert mute state if operation fails
+      _isMuted = !_isMuted;
+      print('Reverted mute state due to error');
     }
   }
 

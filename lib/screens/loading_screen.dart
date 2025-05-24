@@ -24,7 +24,7 @@ class _LoadingScreenState extends State<LoadingScreen>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 3),
+      duration: const Duration(seconds: 6),
     );
 
     _progressAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
@@ -41,9 +41,16 @@ class _LoadingScreenState extends State<LoadingScreen>
       ),
     );
 
-    // Start the animation
-    _controller.forward().then((_) {
+    // Add 1 second buffer before starting the animation
+    Future.delayed(const Duration(seconds: 1), () {
       if (mounted) {
+        _controller.forward();
+      }
+    });
+
+    // Handle completion
+    _controller.addStatusListener((status) {
+      if (status == AnimationStatus.completed && mounted) {
         setState(() {
           _isLoading = false;
         });
@@ -153,7 +160,7 @@ class _LoadingScreenState extends State<LoadingScreen>
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     const Text(
-                      'Almost there...',
+                      'Getting your game ready...',
                       style: TextStyle(
                         fontSize: 32,
                         fontWeight: FontWeight.w500,
@@ -169,6 +176,22 @@ class _LoadingScreenState extends State<LoadingScreen>
                       ),
                     ),
                     const SizedBox(height: 40),
+                    AnimatedBuilder(
+                      animation: _progressAnimation,
+                      builder: (context, child) {
+                        final percentage = (_progressAnimation.value * 100).toInt();
+                        return Text(
+                          '$percentage%',
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.white,
+                            letterSpacing: 1.2,
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 12),
                     SizedBox(
                       width: 300,
                       height: 10,
@@ -224,13 +247,13 @@ class _LoadingScreenState extends State<LoadingScreen>
                                     boxShadow: [
                                       BoxShadow(
                                         color:
-                                            Colors.lightBlue.withOpacity(0.6),
+                                        Colors.lightBlue.withOpacity(0.6),
                                         blurRadius: 12,
                                         spreadRadius: 2,
                                       ),
                                       BoxShadow(
                                         color:
-                                            Colors.lightBlue.withOpacity(0.4),
+                                        Colors.lightBlue.withOpacity(0.4),
                                         blurRadius: 20,
                                         spreadRadius: 4,
                                       ),
@@ -285,7 +308,7 @@ class Particle {
   }
 }
 
-class ParticlePainter extends CustomPainter {
+class ParticlePainter extends CustomPainter { 
   final List<Particle> particles;
 
   ParticlePainter({required this.particles});
