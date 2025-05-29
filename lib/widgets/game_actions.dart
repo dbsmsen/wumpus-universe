@@ -50,27 +50,27 @@ class GameActions extends StatelessWidget {
               children: [
                 _buildActionButton(
                   'Shoot Arrow',
-                  Colors.red.shade100,
+                  Colors.red.shade300,
                   isGameOver || !hasArrow ? null : onShootArrow,
                   textColor: Colors.white,
                 ),
                 _buildActionButton(
                   'AI Solve',
-                  Colors.purple.shade100,
+                  Colors.purple.shade300,
                   isGameOver || autoMoveEnabled ? null : onAutoSolve,
                   textColor: Colors.white,
                 ),
                 if (isGameOver)
                   _buildActionButton(
                     'New Game',
-                    Colors.green.shade100,
+                    Colors.green.shade300,
                     onNewGame,
                     textColor: Colors.white,
                   )
                 else
                   _buildActionButton(
                     'Restart',
-                    Colors.amber.shade100,
+                    Colors.teal.shade300,
                     onRestart,
                     textColor: Colors.white,
                   ),
