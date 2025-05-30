@@ -9,6 +9,8 @@ import '../models/difficulty_level.dart';
 enum DeathCause { pit, wumpus }
 
 class GameController {
+  bool hasWon = false;
+  int score = 0;
   late Agent agent;
   late Grid grid;
   bool isGameOver = false;
@@ -30,6 +32,13 @@ class GameController {
     required this.difficultyLevel,
   }) {
     initializeGame();
+  }
+
+  void _handleGameEnd() {
+    isGameOver = true;
+    stopGameTimer();
+    // Show an interstitial ad when the game ends
+
   }
 
   void initializeGame() {
@@ -109,7 +118,7 @@ class GameController {
       final currentCell = grid.cells[agent.y][agent.x];
       if (currentCell.hasGold) {
         agent.pickGold();
-        gameMessage = 'You found the gold! Now return to the start!';
+        gameMessage = 'You found the gold! Now return back!';
       }
       if (currentCell.hasWumpus && !currentCell.isWumpusDead) {
         gameOverLose('The Wumpus got you!', DeathCause.wumpus);
@@ -223,8 +232,8 @@ class GameController {
 
   void gameOverWin() {
     stopGameTimer();
-    gameMessage = 'Congratulations! You found the gold and returned safely!';
-    isGameOver = true;
+    gameMessage = 'You have just won the game!';
+    _handleGameEnd();
     agent.hasWon = true;
     agent.addPoints(500); // Win bonus
     revealAllPositions();
@@ -234,7 +243,7 @@ class GameController {
     stopGameTimer();
     agent.die();
     gameMessage = reason;
-    isGameOver = true;
+    _handleGameEnd();
     agent.hasWon = false;
     lastDeathCause = cause;
     revealAllPositions();

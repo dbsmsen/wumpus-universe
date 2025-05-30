@@ -4,13 +4,21 @@ import '../models/direction.dart' as dir;
 class GameControls extends StatelessWidget {
   final bool isGameOver;
   final bool autoMoveEnabled;
+  final bool hasArrow;
   final Function(dir.Direction) onMove;
+  final VoidCallback onShootArrow;
+  final VoidCallback onAutoSolve;
+  final bool showActionButtons;
 
   const GameControls({
     super.key,
     required this.isGameOver,
     required this.autoMoveEnabled,
+    required this.hasArrow,
     required this.onMove,
+    required this.onShootArrow,
+    required this.onAutoSolve,
+    this.showActionButtons = true,
   });
 
   @override
@@ -39,11 +47,42 @@ class GameControls extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
+                if (showActionButtons)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      ElevatedButton(
+                        onPressed: isGameOver || !hasArrow ? null : onShootArrow,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red.shade300,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: const Text(
+                          'Shoot Arrow',
+                          style: TextStyle(color: Colors.black),
+                        ),
+                      ),
+                      ElevatedButton(
+                        onPressed: isGameOver || autoMoveEnabled ? null : onAutoSolve,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.purple.shade300,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: const Text(
+                          'AI Solve',
+                          style: TextStyle(color: Colors.black),
+                        ),
+                      ),
+                    ],
+                  ),
+                const SizedBox(height: 12),
                 IconButton(
                   icon: Icon(_directionIcon(dir.Direction.up), size: 32, color: Colors.black),
-                  onPressed: isGameOver || autoMoveEnabled
-                      ? null
-                      : () => onMove(dir.Direction.up),
+                  onPressed: isGameOver || autoMoveEnabled ? null : () => onMove(dir.Direction.up),
                   style: IconButton.styleFrom(
                     backgroundColor: Colors.blue.shade100,
                     shape: RoundedRectangleBorder(
@@ -56,9 +95,7 @@ class GameControls extends StatelessWidget {
                   children: [
                     IconButton(
                       icon: Icon(_directionIcon(dir.Direction.left), size: 32, color: Colors.black),
-                      onPressed: isGameOver || autoMoveEnabled
-                          ? null
-                          : () => onMove(dir.Direction.left),
+                      onPressed: isGameOver || autoMoveEnabled ? null : () => onMove(dir.Direction.left),
                       style: IconButton.styleFrom(
                         backgroundColor: Colors.blue.shade100,
                         shape: RoundedRectangleBorder(
@@ -69,9 +106,7 @@ class GameControls extends StatelessWidget {
                     const SizedBox(width: 32),
                     IconButton(
                       icon: Icon(_directionIcon(dir.Direction.right), size: 32, color: Colors.black),
-                      onPressed: isGameOver || autoMoveEnabled
-                          ? null
-                          : () => onMove(dir.Direction.right),
+                      onPressed: isGameOver || autoMoveEnabled ? null : () => onMove(dir.Direction.right),
                       style: IconButton.styleFrom(
                         backgroundColor: Colors.blue.shade100,
                         shape: RoundedRectangleBorder(
@@ -83,9 +118,7 @@ class GameControls extends StatelessWidget {
                 ),
                 IconButton(
                   icon: Icon(_directionIcon(dir.Direction.down), size: 32, color: Colors.black),
-                  onPressed: isGameOver || autoMoveEnabled
-                      ? null
-                      : () => onMove(dir.Direction.down),
+                  onPressed: isGameOver || autoMoveEnabled ? null : () => onMove(dir.Direction.down),
                   style: IconButton.styleFrom(
                     backgroundColor: Colors.blue.shade100,
                     shape: RoundedRectangleBorder(
@@ -93,6 +126,7 @@ class GameControls extends StatelessWidget {
                     ),
                   ),
                 ),
+                const SizedBox(height: 12),
               ],
             ),
           ),

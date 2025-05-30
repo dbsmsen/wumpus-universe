@@ -1,14 +1,13 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
-import '../models/wumpus_ai_solver.dart';
-import '../controllers/game_controller.dart';
-import '../widgets/game_grid.dart';
-import '../widgets/game_controls.dart';
-import '../widgets/game_info_panel.dart';
-import '../widgets/game_actions.dart';
-import '../models/game_mode.dart';
-import '../models/difficulty_level.dart';
-import 'package:audioplayers/audioplayers.dart';
+import 'package:wumpus_universe/controllers/game_controller.dart';
+import 'package:wumpus_universe/models/direction.dart';
+import 'package:wumpus_universe/models/game_mode.dart';
+import 'package:wumpus_universe/models/difficulty_level.dart';
+import 'package:wumpus_universe/services/audio_service.dart';
+import 'package:wumpus_universe/widgets/game_controls.dart';
+import 'package:wumpus_universe/widgets/game_grid.dart';
 
 class GameScreen extends StatefulWidget {
   final int rows;
@@ -17,24 +16,26 @@ class GameScreen extends StatefulWidget {
   final DifficultyLevel difficultyLevel;
 
   const GameScreen({
-    super.key,
+    Key? key,
     required this.rows,
     required this.columns,
     required this.gameMode,
     required this.difficultyLevel,
-  });
+  }) : super(key: key);
 
   @override
-  State<GameScreen> createState() => _GameScreenState();
+  _GameScreenState createState() => _GameScreenState();
 }
+
+enum GameAction { newGame, restart, autoSolve }
 
 class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   late GameController _gameController;
-  final Map<String, AnimationController> _cellAnimations = {};
+  late AudioService _audioService;
   Timer? _gameTimer;
   Duration _gameDuration = Duration.zero;
-  WumpusAISolver? _aiSolver;
-  final AudioPlayer _audioPlayer = AudioPlayer();
+  final Map<String, AnimationController> _cellAnimations = {};
+  bool _autoMoveEnabled = false;
 
   @override
   void initState() {
@@ -45,7 +46,20 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       gameMode: widget.gameMode,
       difficultyLevel: widget.difficultyLevel,
     );
+    _audioService = AudioService();
     _startGameTimer();
+    _audioService.playBackgroundMusic();
+  }
+
+  @override
+  void dispose() {
+    _gameTimer?.cancel();
+    _audioService.stopBackgroundMusic();
+    _gameController.dispose();
+    _cellAnimations.forEach((_, controller) {
+      controller.dispose();
+    });
+    super.dispose();
   }
 
   void _startGameTimer() {
@@ -56,18 +70,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         _gameDuration += const Duration(seconds: 1);
       });
     });
-  }
-
-  @override
-  void dispose() {
-    _gameTimer?.cancel();
-    _gameController.dispose();
-    _aiSolver?.dispose();
-    _cellAnimations.forEach((key, controller) {
-      controller.dispose();
-    });
-    _audioPlayer.dispose();
-    super.dispose();
   }
 
   @override
@@ -85,232 +87,88 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   void _playDeathSoundIfNeeded() {
     if (_gameController.isGameOver && !_gameController.agent.hasWon) {
       if (_gameController.lastDeathCause == DeathCause.pit) {
-        _playPitSound();
+        _audioService.playPitSound();
       } else if (_gameController.lastDeathCause == DeathCause.wumpus) {
-        _playWumpusDeathSound();
+        _audioService.playWumpusDeathSound();
       }
     }
-  }
-
-  Future<void> _showNameInputDialog() async {
-    String playerName = '';
-    await showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Congratulations!'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('You won the game!'),
-              const SizedBox(height: 16),
-              TextField(
-                decoration: const InputDecoration(
-                  labelText: 'Enter your name',
-                  border: OutlineInputBorder(),
-                ),
-                onChanged: (value) {
-                  playerName = value;
-                },
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                if (playerName.trim().isNotEmpty) {
-                  Navigator.of(context).pop();
-                  _addToLeaderboard(playerName);
-                }
-              },
-              child: const Text('Submit'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _addToLeaderboard(String playerName) {
-    if (_gameController.agent.hasWon) {
-      // Add to leaderboard logic here
-    }
-  }
-
-  void _autoSolveWumpusWorld() {
-    _aiSolver?.dispose();
-    _aiSolver = WumpusAISolver(
-      agent: _gameController.agent,
-      grid: _gameController.grid.cells,
-      rows: widget.rows,
-      columns: widget.columns,
-    );
-
-    setState(() {
-      _gameController.autoMoveEnabled = true;
-      _gameController.gameMessage = 'AI solving the Wumpus World...';
-    });
-
-    _aiSolver!.solve(
-      onMove: (move) {
-        if (move != null) {
-          setState(() {
-            // First set the direction
-            _gameController.agent.setDirection(move);
-            // Then move in that direction
-            _gameController.move(move);
-            // Update the grid state
-            _gameController.updateSensoryIndicators();
-          });
-        } else {
-          // Handle special actions (shooting arrow or picking up gold)
-          setState(() {
-            if (_gameController.agent.hasArrow) {
-              _gameController.shootArrow();
-            } else if (_gameController
-                .grid
-                .cells[_gameController.agent.y][_gameController.agent.x]
-                .hasGold) {
-              _gameController.agent.pickGold();
-            }
-          });
-        }
-      },
-      onComplete: () {
-        setState(() {
-          _gameController.autoMoveEnabled = false;
-          _gameController.gameMessage = 'AI solution complete!';
-        });
-      },
-      onMessage: (message) {
-        setState(() {
-          _gameController.gameMessage = message;
-        });
-      },
-    );
-  }
-
-  Future<void> _playPitSound() async {
-    await _audioPlayer.play(AssetSource('sounds/pit.wav'));
-  }
-
-  Future<void> _playWumpusDeathSound() async {
-    await _audioPlayer.play(AssetSource('sounds/wumpus_death.wav'));
-  }
-
-  void _handleAgentDeath(bool killedByWumpus) {
-    if (killedByWumpus) {
-      _playWumpusDeathSound();
-    } else {
-      _playPitSound();
-    }
-    // Show game over dialog or navigate to a game over screen
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      drawer: Drawer(
-        child: Container(
-          decoration: const BoxDecoration(
-            image: DecorationImage(
-              image: AssetImage('assets/images/grid_background.png'),
-              fit: BoxFit.cover,
-            ),
-          ),
-          child: GameInfoPanel(
-            agent: _gameController.agent,
-            gameMessage: _gameController.gameMessage,
-            gameDuration: _gameDuration,
-            hasWon: _gameController.agent.hasWon,
-            isGameOver: _gameController.isGameOver,
-            autoMoveEnabled: _gameController.autoMoveEnabled,
-            hasArrow: _gameController.agent.hasArrow,
-            onShootArrow: () {
-              setState(() {
-                _gameController.shootArrow();
-              });
-            },
-            onAutoSolve: _autoSolveWumpusWorld,
-            onNewGame: () {
-              setState(() {
-                _gameController.initializeGame();
-                _startGameTimer();
-              });
-            },
-            onRestart: () {
-              setState(() {
-                _gameController.initializeGame();
-                _startGameTimer();
-              });
-            },
-          ),
-        ),
-      ),
       appBar: AppBar(
-        title: const Text(
-          'The Wumpus Universe',
-          style: TextStyle(color: Colors.white),
-        ),
-        backgroundColor: Colors.deepPurple,
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(
-          color: Colors.white,
-          size: 32,
-        ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
-            // Show confirmation dialog before leaving
             showDialog(
               context: context,
-              builder: (BuildContext context) {
-                return AlertDialog(
-                  title: const Text('Are you sure?'),
-                  content: const Text(
-                      'You want to leave the current game?'),
-                  actions: [
-                    TextButton(
-                      onPressed: () {
-                        Navigator.of(context).pop(); // Close dialog
-                      },
-                      child: const Text('Cancel'),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.of(context).pop(); // Close dialog
-                        Navigator.of(context)
-                            .pop(); // Return to grid selection screen
-                      },
-                      child: const Text('Leave'),
-                    ),
-                  ],
-                );
-              },
+              builder: (context) => AlertDialog(
+                backgroundColor: Colors.grey.shade900,
+                title: const Text('Leave Game?', style: TextStyle(color: Colors.white)),
+                content: const Text('Are you sure you want to leave the game? Your progress will be lost.',
+                    style: TextStyle(color: Colors.white70)),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('Cancel', style: TextStyle(color: Colors.amber)),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop(); // Close dialog
+                      Navigator.of(context).pop(); // Go back
+                    },
+                    child: const Text('Leave', style: TextStyle(color: Colors.red)),
+                  ),
+                ],
+              ),
             );
           },
         ),
+        actions: [
+          IconButton(
+            icon: Icon(
+              _audioService.isMusicPlaying
+                  ? Icons.volume_up
+                  : Icons.volume_off,
+              color: _audioService.isMusicPlaying ? Colors.white : Colors.red.shade400,
+            ),
+            onPressed: () {
+              setState(() {
+                if (_audioService.isMusicPlaying) {
+                  _audioService.stopBackgroundMusic();
+                } else {
+                  _audioService.playBackgroundMusic();
+                }
+              });
+            },
+          ),
+        ],
       ),
       extendBodyBehindAppBar: true,
       body: Container(
-        decoration: BoxDecoration(
-          color: Colors.deepPurple,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFF4A148C),
+              Color(0xFF311B92),
+            ],
+          ),
         ),
         child: SafeArea(
           child: Column(
             children: [
               Expanded(
                 child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.1),
-                  ),
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
                   child: Column(
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 8, horizontal: 16),
+                        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.2),
                           borderRadius: BorderRadius.circular(12),
@@ -318,31 +176,65 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                             color: Colors.white.withOpacity(0.3),
                             width: 1,
                           ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
                         child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Icon(
-                              Icons.timer,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Game Duration: ${_formatDuration(_gameDuration)}',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
+                            Expanded(
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  if (_gameController.isGameOver)
+                                    Text(
+                                      _gameController.agent.hasWon ? 'Congratulations!' : 'Game Over',
+                                      style: TextStyle(
+                                        color: _gameController.agent.hasWon
+                                            ? Colors.green
+                                            : Colors.red,
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    )
+                                  else
+                                    Text(
+                                      'Find the Gold!',
+                                      style: TextStyle(
+                                        color: Colors.amber,
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  if (_gameController.gameMessage.isNotEmpty)
+                                    Flexible(
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(left: 16),
+                                        child: Text(
+                                          _gameController.gameMessage,
+                                          style: const TextStyle(
+                                            color: Colors.amber,
+                                            fontSize: 16,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ),
+                                ],
                               ),
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 10),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            vertical: 8, horizontal: 16),
+                            vertical: 6, horizontal: 16),
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.2),
                           borderRadius: BorderRadius.circular(12),
@@ -350,21 +242,30 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                             color: Colors.white.withOpacity(0.3),
                             width: 1,
                           ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
                         child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Icon(
-                              Icons.score,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 8),
                             Text(
-                              'Score: ${_gameController.agent.score} | Moves: ${_gameController.agent.moves}',
+                              'Score: ${_gameController.agent.score}',
                               style: const TextStyle(
                                 color: Colors.white,
-                                fontSize: 16,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              'Time: ${_formatDuration(_gameDuration)}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -376,44 +277,165 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                         child: GameGrid(
                           grid: _gameController.grid,
                           agent: _gameController.agent,
-                          isNeighbor: _gameController.isNeighbor,
                           cellAnimations: _cellAnimations,
+                          isNeighbor: _gameController.isNeighbor,
                         ),
                       ),
                       const SizedBox(height: 16),
-                      GameActions(
-                        isGameOver: _gameController.isGameOver,
-                        autoMoveEnabled: _gameController.autoMoveEnabled,
-                        hasArrow: _gameController.agent.hasArrow,
-                        onShootArrow: () {
-                          setState(() {
-                            _gameController.shootArrow();
-                          });
-                        },
-                        onAutoSolve: _autoSolveWumpusWorld,
-                        onNewGame: () {
-                          setState(() {
-                            _gameController.initializeGame();
-                            _startGameTimer();
-                          });
-                        },
-                        onRestart: () {
-                          setState(() {
-                            _gameController.initializeGame();
-                            _startGameTimer();
-                          });
-                        },
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.3),
+                            width: 1,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            if (_gameController.isGameOver)
+                              ElevatedButton(
+                                onPressed: () {
+                                  setState(() {
+                                    _gameController = GameController(
+                                      rows: widget.rows,
+                                      columns: widget.columns,
+                                      gameMode: widget.gameMode,
+                                      difficultyLevel: widget.difficultyLevel,
+                                    );
+                                    _startGameTimer();
+                                  });
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.lightGreenAccent.shade100,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                                child: const Text(
+                                  'New Game',
+                                  style: TextStyle(color: Colors.black, fontSize: 16),
+                                ),
+                              ),
+                            if (!_gameController.isGameOver)
+                              ElevatedButton(
+                                onPressed: () {
+                                  setState(() {
+                                    _gameController = GameController(
+                                      rows: widget.rows,
+                                      columns: widget.columns,
+                                      gameMode: widget.gameMode,
+                                      difficultyLevel: widget.difficultyLevel,
+                                    );
+                                    _startGameTimer();
+                                  });
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.orangeAccent.shade200,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                                child: const Text(
+                                  'Restart',
+                                  style: TextStyle(color: Colors.black, fontSize: 16),
+                                ),
+                              ),
+                            ElevatedButton(
+                              onPressed: _gameController.isGameOver || _autoMoveEnabled
+                                  ? null
+                                  : () async {
+                                      if (_autoMoveEnabled) return;
+                                      setState(() {
+                                        _autoMoveEnabled = true;
+                                      });
+                                      while (!_gameController.isGameOver &&
+                                          _autoMoveEnabled) {
+                                        await Future.delayed(
+                                            const Duration(milliseconds: 500));
+                                        setState(() {
+                                          _gameController.move(Direction.up);
+                                        });
+                                      }
+                                      setState(() {
+                                        _autoMoveEnabled = false;
+                                      });
+                                    },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.yellow.shade300,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              child: const Text(
+                                'AI Solve',
+                                style: TextStyle(color: Colors.black, fontSize: 16),
+                              ),
+                            ),
+                            ElevatedButton(
+                              onPressed: _gameController.isGameOver || !_gameController.agent.hasArrow
+                                  ? null
+                                  : () {
+                                      setState(() {
+                                        _gameController.agent.shootArrow();
+                                      });
+                                    },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.redAccent.shade100,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              child: const Text(
+                                'Shoot Arrow',
+                                style: TextStyle(color: Colors.black, fontSize: 16),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                       GameControls(
-                        isGameOver: _gameController.isGameOver,
-                        autoMoveEnabled: _gameController.autoMoveEnabled,
                         onMove: (direction) {
                           setState(() {
                             _gameController.move(direction);
                           });
                         },
+                        onShootArrow: () {
+                          setState(() {
+                            _gameController.agent.shootArrow();
+                          });
+                        },
+                        onAutoSolve: () async {
+                          if (_autoMoveEnabled) return;
+                          setState(() {
+                            _autoMoveEnabled = true;
+                          });
+                          while (!_gameController.isGameOver && _autoMoveEnabled) {
+                            await Future.delayed(const Duration(milliseconds: 500));
+                            setState(() {
+                              _gameController.move(Direction.up);
+                            });
+                          }
+                          setState(() {
+                            _autoMoveEnabled = false;
+                          });
+                        },
+                        isGameOver: _gameController.isGameOver,
+                        autoMoveEnabled: _autoMoveEnabled,
+                        hasArrow: _gameController.agent.hasArrow,
+                        showActionButtons: false,
                       ),
+                      const SizedBox(height: 12),
                     ],
                   ),
                 ),

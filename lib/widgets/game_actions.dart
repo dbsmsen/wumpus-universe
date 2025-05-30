@@ -2,20 +2,20 @@ import 'package:flutter/material.dart';
 
 class GameActions extends StatelessWidget {
   final bool isGameOver;
-  final bool autoMoveEnabled;
-  final bool hasArrow;
-  final VoidCallback onShootArrow;
-  final VoidCallback onAutoSolve;
+  final bool hasWon;
+  final String gameMessage;
+  final Duration gameDuration;
+  final int score;
   final VoidCallback onNewGame;
   final VoidCallback onRestart;
 
   const GameActions({
     super.key,
     required this.isGameOver,
-    required this.autoMoveEnabled,
-    required this.hasArrow,
-    required this.onShootArrow,
-    required this.onAutoSolve,
+    required this.hasWon,
+    required this.gameMessage,
+    required this.gameDuration,
+    required this.score,
     required this.onNewGame,
     required this.onRestart,
   });
@@ -48,31 +48,50 @@ class GameActions extends StatelessWidget {
               runSpacing: 6,
               alignment: WrapAlignment.center,
               children: [
-                _buildActionButton(
-                  'Shoot Arrow',
-                  Colors.red.shade300,
-                  isGameOver || !hasArrow ? null : onShootArrow,
-                  textColor: Colors.white,
+                if (isGameOver)
+                  Text(
+                    hasWon ? 'You Won!' : 'Game Over',
+                    style: TextStyle(
+                      color: hasWon ? Colors.green : Colors.red,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                Text(
+                  gameMessage,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                  ),
                 ),
-                _buildActionButton(
-                  'AI Solve',
-                  Colors.purple.shade300,
-                  isGameOver || autoMoveEnabled ? null : onAutoSolve,
-                  textColor: Colors.white,
+                Text(
+                  'Score: $score',
+                  style: const TextStyle(
+                    color: Colors.amber,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  'Time: ${gameDuration.inSeconds}s',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                  ),
                 ),
                 if (isGameOver)
                   _buildActionButton(
                     'New Game',
                     Colors.green.shade300,
                     onNewGame,
-                    textColor: Colors.white,
+                    textColor: Colors.black,
                   )
                 else
                   _buildActionButton(
                     'Restart',
                     Colors.teal.shade300,
                     onRestart,
-                    textColor: Colors.white,
+                    textColor: Colors.black,
                   ),
               ],
             ),
