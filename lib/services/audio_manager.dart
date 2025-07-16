@@ -28,7 +28,8 @@ class AudioManager {
 
       // Load saved volume and mute settings
       final prefs = await SharedPreferences.getInstance();
-      _backgroundMusicVolume = prefs.getDouble('background_music_volume') ?? 0.5;
+      _backgroundMusicVolume =
+          prefs.getDouble('background_music_volume') ?? 0.5;
       _soundEffectVolume = prefs.getDouble('sound_effect_volume') ?? 0.3;
       _isMuted = prefs.getBool('is_muted') ?? false;
 
@@ -36,15 +37,15 @@ class AudioManager {
       await _audioPlayer.setReleaseMode(ReleaseMode.loop);
       await _audioPlayer.setVolume(_isMuted ? 0 : _backgroundMusicVolume);
       await _audioPlayer.setSource(AssetSource(_currentBackgroundMusic));
-      
+
       // Set initial state
       _isMusicPlaying = false;
-      
+
       // Start playing if not muted and not on web
       if (!kIsWeb && !_isMuted) {
         await playBackgroundMusic();
       }
-      
+
       print('AudioManager initialized successfully');
     } catch (e) {
       print('Error initializing AudioManager: $e');
@@ -54,7 +55,10 @@ class AudioManager {
   }
 
   Future<void> playBackgroundMusic() async {
-    if (!_isMusicPlaying && !_isGameScreen && !_isPlayingSoundEffect && !_isMuted) {
+    if (!_isMusicPlaying &&
+        !_isGameScreen &&
+        !_isPlayingSoundEffect &&
+        !_isMuted) {
       try {
         print('Attempting to play background music...');
         // Always re-initialize to ensure clean state
@@ -62,7 +66,7 @@ class AudioManager {
         await _audioPlayer.setReleaseMode(ReleaseMode.loop);
         await _audioPlayer.setVolume(_backgroundMusicVolume);
         await _audioPlayer.setSource(AssetSource(_currentBackgroundMusic));
-        
+
         // Small delay to ensure audio system is ready
         await Future.delayed(const Duration(milliseconds: 100));
         await _audioPlayer.resume();
@@ -80,7 +84,8 @@ class AudioManager {
         }
       }
     } else {
-      print('Skipping playback - Playing: $_isMusicPlaying, GameScreen: $_isGameScreen, SoundEffect: $_isPlayingSoundEffect, Muted: $_isMuted');
+      print(
+          'Skipping playback - Playing: $_isMusicPlaying, GameScreen: $_isGameScreen, SoundEffect: $_isPlayingSoundEffect, Muted: $_isMuted');
     }
   }
 
@@ -88,7 +93,8 @@ class AudioManager {
     if (_isMusicPlaying && !_isPlayingSoundEffect) {
       try {
         print('Attempting to pause background music...');
-        await _audioPlayer.stop(); // Use stop instead of pause for more reliable state
+        await _audioPlayer
+            .stop(); // Use stop instead of pause for more reliable state
         _isMusicPlaying = false;
         print('Background music stopped successfully');
       } catch (e) {
@@ -103,7 +109,7 @@ class AudioManager {
       print('Current state - Muted: $_isMuted, Playing: $_isMusicPlaying');
       _isMuted = !_isMuted;
       print('Toggling mute state to: ${_isMuted ? 'muted' : 'unmuted'}');
-      
+
       // Save mute state
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('is_muted', _isMuted);
@@ -123,7 +129,8 @@ class AudioManager {
         await _audioPlayer.resume();
         _isMusicPlaying = true;
       }
-      print('Audio state updated - Muted: $_isMuted, Playing: $_isMusicPlaying');
+      print(
+          'Audio state updated - Muted: $_isMuted, Playing: $_isMusicPlaying');
     } catch (e) {
       print('Error toggling mute: $e');
       // Revert mute state if operation fails

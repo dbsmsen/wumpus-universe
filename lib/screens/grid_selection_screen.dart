@@ -173,21 +173,63 @@ class _GridSelectionScreenState extends State<GridSelectionScreen>
   }
 
   final _drawerItems = const [
-    {'icon': Icons.games, 'color': Colors.indigo, 'title': 'Game Mechanics', 'subtitle': 'Learn how to play'},
-    {'icon': Icons.scoreboard, 'color': Colors.purple, 'title': 'Point System', 'subtitle': 'Scoring rules and penalties'},
-    {'icon': Icons.school, 'color': Colors.blue, 'title': 'Tutorial', 'subtitle': 'Learn the basics'},
-    {'icon': Icons.leaderboard, 'color': Colors.green, 'title': 'Leaderboard', 'subtitle': 'View top scores'},
-    {'icon': Icons.palette, 'color': Colors.orange, 'title': 'Theme', 'subtitle': 'Customize appearance'},
-    {'icon': Icons.volume_up, 'color': Colors.red, 'title': 'Sounds', 'subtitle': 'Audio settings'},
-    {'icon': Icons.info, 'color': Colors.teal, 'title': 'About', 'subtitle': 'Game information'},
-    {'icon': Icons.logout, 'color': Colors.grey, 'title': 'Logout', 'subtitle': 'Exit game'},
+    {
+      'icon': Icons.games,
+      'color': Colors.indigo,
+      'title': 'Game Mechanics',
+      'subtitle': 'Learn how to play'
+    },
+    {
+      'icon': Icons.scoreboard,
+      'color': Colors.purple,
+      'title': 'Point System',
+      'subtitle': 'Scoring rules and penalties'
+    },
+    {
+      'icon': Icons.school,
+      'color': Colors.blue,
+      'title': 'Tutorial',
+      'subtitle': 'Learn the basics'
+    },
+    {
+      'icon': Icons.leaderboard,
+      'color': Colors.green,
+      'title': 'Leaderboard',
+      'subtitle': 'View top scores'
+    },
+    {
+      'icon': Icons.palette,
+      'color': Colors.orange,
+      'title': 'Theme',
+      'subtitle': 'Customize appearance'
+    },
+    {
+      'icon': Icons.volume_up,
+      'color': Colors.red,
+      'title': 'Sounds',
+      'subtitle': 'Audio settings'
+    },
+    {
+      'icon': Icons.info,
+      'color': Colors.teal,
+      'title': 'About',
+      'subtitle': 'Game information'
+    },
+    {
+      'icon': Icons.logout,
+      'color': Colors.grey,
+      'title': 'Logout',
+      'subtitle': 'Exit game'
+    },
   ];
 
   Widget _buildDrawerItem(Map<String, dynamic> item, void Function() onTap) {
     return ListTile(
       leading: Icon(item['icon'] as IconData, color: item['color'] as Color),
-      title: Text(item['title'] as String, style: const TextStyle(color: Colors.black)),
-      subtitle: Text(item['subtitle'] as String, style: const TextStyle(color: Colors.black54)),
+      title: Text(item['title'] as String,
+          style: const TextStyle(color: Colors.black)),
+      subtitle: Text(item['subtitle'] as String,
+          style: const TextStyle(color: Colors.black54)),
       tileColor: Colors.white,
       onTap: onTap,
     );
@@ -195,6 +237,7 @@ class _GridSelectionScreenState extends State<GridSelectionScreen>
 
   @override
   Widget build(BuildContext context) {
+    print('GridSelectionScreen: build called');
     return Scaffold(
       drawer: Drawer(
         child: Container(
@@ -282,8 +325,10 @@ class _GridSelectionScreenState extends State<GridSelectionScreen>
               }).toList(),
               ListTile(
                 leading: const Icon(Icons.info_outline, color: Colors.indigo),
-                title: const Text('About', style: TextStyle(color: Colors.black)),
-                subtitle: const Text('Game information', style: TextStyle(color: Colors.black54)),
+                title:
+                    const Text('About', style: TextStyle(color: Colors.black)),
+                subtitle: const Text('Game information',
+                    style: TextStyle(color: Colors.black54)),
                 tileColor: Colors.white,
                 onTap: () async {
                   await _playClickSound();
@@ -293,8 +338,10 @@ class _GridSelectionScreenState extends State<GridSelectionScreen>
               ),
               ListTile(
                 leading: const Icon(Icons.leaderboard, color: Colors.amber),
-                title: const Text('Leaderboard', style: TextStyle(color: Colors.black)),
-                subtitle: const Text('View high scores', style: TextStyle(color: Colors.black54)),
+                title: const Text('Leaderboard',
+                    style: TextStyle(color: Colors.black)),
+                subtitle: const Text('View high scores',
+                    style: TextStyle(color: Colors.black54)),
                 tileColor: Colors.white,
                 onTap: () async {
                   await _playClickSound();
@@ -309,8 +356,10 @@ class _GridSelectionScreenState extends State<GridSelectionScreen>
               ),
               ListTile(
                 leading: const Icon(Icons.settings, color: Colors.teal),
-                title: const Text('App Settings', style: TextStyle(color: Colors.black)),
-                subtitle: const Text('Manage preferences', style: TextStyle(color: Colors.black54)),
+                title: const Text('App Settings',
+                    style: TextStyle(color: Colors.black)),
+                subtitle: const Text('Manage preferences',
+                    style: TextStyle(color: Colors.black54)),
                 tileColor: Colors.white,
                 onTap: () async {
                   await _playClickSound();
@@ -320,8 +369,10 @@ class _GridSelectionScreenState extends State<GridSelectionScreen>
               ),
               ListTile(
                 leading: const Icon(Icons.music_note, color: Colors.purple),
-                title: const Text('Sounds', style: TextStyle(color: Colors.black)),
-                subtitle: const Text('Audio settings', style: TextStyle(color: Colors.black54)),
+                title:
+                    const Text('Sounds', style: TextStyle(color: Colors.black)),
+                subtitle: const Text('Audio settings',
+                    style: TextStyle(color: Colors.black54)),
                 tileColor: Colors.white,
                 onTap: () async {
                   await _playClickSound();
@@ -331,8 +382,10 @@ class _GridSelectionScreenState extends State<GridSelectionScreen>
               ),
               ListTile(
                 leading: const Icon(Icons.palette, color: Colors.orange),
-                title: const Text('Theme', style: TextStyle(color: Colors.black)),
-                subtitle: const Text('Customize appearance', style: TextStyle(color: Colors.black54)),
+                title:
+                    const Text('Theme', style: TextStyle(color: Colors.black)),
+                subtitle: const Text('Customize appearance',
+                    style: TextStyle(color: Colors.black54)),
                 tileColor: Colors.white,
                 onTap: () async {
                   await _playClickSound();
@@ -342,8 +395,10 @@ class _GridSelectionScreenState extends State<GridSelectionScreen>
               ),
               ListTile(
                 leading: const Icon(Icons.star, color: Colors.amber),
-                title: const Text('Rate & Review', style: TextStyle(color: Colors.black)),
-                subtitle: const Text('Rate on Google Play', style: TextStyle(color: Colors.black54)),
+                title: const Text('Rate & Review',
+                    style: TextStyle(color: Colors.black)),
+                subtitle: const Text('Rate on Google Play',
+                    style: TextStyle(color: Colors.black54)),
                 tileColor: Colors.white,
                 onTap: () async {
                   await _playClickSound();
@@ -353,8 +408,10 @@ class _GridSelectionScreenState extends State<GridSelectionScreen>
               ),
               ListTile(
                 leading: const Icon(Icons.info_outline, color: Colors.indigo),
-                title: const Text('About', style: TextStyle(color: Colors.black)),
-                subtitle: const Text('Game information', style: TextStyle(color: Colors.black54)),
+                title:
+                    const Text('About', style: TextStyle(color: Colors.black)),
+                subtitle: const Text('Game information',
+                    style: TextStyle(color: Colors.black54)),
                 tileColor: Colors.white,
                 onTap: () async {
                   await _playClickSound();
@@ -365,8 +422,10 @@ class _GridSelectionScreenState extends State<GridSelectionScreen>
               const Divider(color: Colors.black12),
               ListTile(
                 leading: const Icon(Icons.logout, color: Colors.red),
-                title: const Text('Logout', style: TextStyle(color: Colors.black)),
-                subtitle: const Text('Exit the game', style: TextStyle(color: Colors.black54)),
+                title:
+                    const Text('Logout', style: TextStyle(color: Colors.black)),
+                subtitle: const Text('Exit the game',
+                    style: TextStyle(color: Colors.black54)),
                 tileColor: Colors.white,
                 onTap: () async {
                   await _playClickSound();
@@ -399,128 +458,10 @@ class _GridSelectionScreenState extends State<GridSelectionScreen>
         ],
       ),
       extendBodyBehindAppBar: true,
-      body: Container(
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage('assets/images/grid_background.png'),
-            fit: BoxFit.cover,
-          ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: SlideTransition(
-                    position: _slideAnimation,
-                    child: Container(
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF1A1A1A).withOpacity(0.65),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.15),
-                          width: 1,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.15),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Text(
-                            'Choose Your Game Style',
-                            style: TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                              letterSpacing: 1.2,
-                            ),
-                          ),
-                          const SizedBox(height: 32),
-                          GameSettingsSection(
-                            selectedGameMode: selectedGameMode,
-                            selectedDifficulty: selectedDifficulty,
-                            onGameModeSelected: _handleGameModeSelected,
-                            onDifficultySelected: _handleDifficultySelected,
-                            onPlayClickSound: _playClickSound,
-                          ),
-                          const SizedBox(height: 32),
-                          GridSelectionSection(
-                            predefinedGrids: predefinedGrids,
-                            customGridSize: customGridSize,
-                            selectedGridSize: selectedGridSize,
-                            isCustomGridSelected: isCustomGridSelected,
-                            isPredefinedGridSelected: isPredefinedGridSelected,
-                            onPredefinedGridSelected: _handlePredefinedGridSelected,
-                            onCustomGridSelected: _handleCustomGridSelected,
-                            onPlayClickSound: _playClickSound,
-                            onPlayGridSelectionSound: _playGridSelectionSound,
-                          ),
-                          const SizedBox(height: 32),
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.green[700],
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 32,
-                                vertical: 20,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              elevation: 4,
-                            ),
-                            onPressed: () async {
-                              await _playClickSound();
-                              if (selectedGameMode == null ||
-                                  selectedDifficulty == null) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                        'Please select both a game mode and difficulty level'),
-                                    backgroundColor: Colors.red,
-                                  ),
-                                );
-                                return;
-                              }
-                              if (selectedGridSize == null) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Please select a grid size first'),
-                                    backgroundColor: Colors.red,
-                                  ),
-                                );
-                                return;
-                              }
-                              _startGame(
-                                selectedGridSize![0],
-                                selectedGridSize![1],
-                              );
-                            },
-                            child: const Text(
-                              'Enter with Selected Grid',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
+      body: Center(
+        child: Text(
+          'Grid Selection Screen Loaded!',
+          style: TextStyle(fontSize: 32, color: Colors.white),
         ),
       ),
     );
@@ -532,7 +473,6 @@ class _GridSelectionScreenState extends State<GridSelectionScreen>
       builder: (context) => const TutorialDialog(),
     );
   }
-
 
   void _showThemeDialog(BuildContext context) {
     showDialog(

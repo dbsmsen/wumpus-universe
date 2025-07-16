@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:wumpus_universe/screens/grid_selection_screen.dart';
-import 'dart:math' as math;
 
 class LoadingScreen extends StatefulWidget {
   const LoadingScreen({super.key});
@@ -14,17 +13,14 @@ class _LoadingScreenState extends State<LoadingScreen>
   late AnimationController _controller;
   late Animation<double> _progressAnimation;
   late Animation<double> _glowAnimation;
-  bool _isLoading = true;
-  final List<Particle> _particles = [];
-  final math.Random _random = math.Random();
-  bool _particlesInitialized = false;
 
   @override
   void initState() {
     super.initState();
+    print('LoadingScreen: initState called');
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 6),
+      duration: const Duration(seconds: 4),
     );
 
     _progressAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
@@ -34,68 +30,21 @@ class _LoadingScreenState extends State<LoadingScreen>
       ),
     );
 
-    _glowAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeInOut,
-      ),
-    );
+    _glowAnimation = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 0.5, end: 1.0), weight: 50),
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.5), weight: 50),
+    ]).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
 
-    // Add 1 second buffer before starting the animation
-    Future.delayed(const Duration(seconds: 1), () {
-      if (mounted) {
-        _controller.forward();
-      }
-    });
+    _controller.forward();
+    print('LoadingScreen: AnimationController started');
 
-    // Handle completion
     _controller.addStatusListener((status) {
-      if (status == AnimationStatus.completed && mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (context) => const GridSelectionScreen(),
-          ),
-        );
-      }
-    });
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (!_particlesInitialized) {
-      _initializeParticles();
-      _startParticleAnimation();
-      _particlesInitialized = true;
-    }
-  }
-
-  void _initializeParticles() {
-    final size = MediaQuery.of(context).size;
-    for (int i = 0; i < 50; i++) {
-      _particles.add(Particle(
-        x: _random.nextDouble() * size.width,
-        y: _random.nextDouble() * size.height,
-        size: _random.nextDouble() * 3 + 1,
-        speedX: _random.nextDouble() * 2 - 1,
-        speedY: _random.nextDouble() * 2 - 1,
-        opacity: _random.nextDouble() * 0.5 + 0.2,
-      ));
-    }
-  }
-
-  void _startParticleAnimation() {
-    Future.delayed(const Duration(milliseconds: 16), () {
-      if (mounted) {
-        setState(() {
-          for (var particle in _particles) {
-            particle.update();
-          }
-        });
-        _startParticleAnimation();
+      print('LoadingScreen: Animation status: $status');
+      if (status == AnimationStatus.completed) {
+        if (mounted) {
+          print('Loading complete, navigating to grid selection');
+          Navigator.of(context).pushReplacementNamed('/grid_selection');
+        }
       }
     });
   }
@@ -108,6 +57,7 @@ class _LoadingScreenState extends State<LoadingScreen>
 
   @override
   Widget build(BuildContext context) {
+    print('LoadingScreen: build called');
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -118,7 +68,6 @@ class _LoadingScreenState extends State<LoadingScreen>
         ),
         child: Stack(
           children: [
-            // Shadowy overlay
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -132,12 +81,6 @@ class _LoadingScreenState extends State<LoadingScreen>
                 ),
               ),
             ),
-            // Particles
-            CustomPaint(
-              painter: ParticlePainter(particles: _particles),
-              size: Size.infinite,
-            ),
-            // Loading content
             Center(
               child: Container(
                 padding: const EdgeInsets.all(32),
@@ -179,7 +122,8 @@ class _LoadingScreenState extends State<LoadingScreen>
                     AnimatedBuilder(
                       animation: _progressAnimation,
                       builder: (context, child) {
-                        final percentage = (_progressAnimation.value * 100).toInt();
+                        final percentage =
+                            (_progressAnimation.value * 100).toInt();
                         return Text(
                           '$percentage%',
                           style: const TextStyle(
@@ -195,75 +139,47 @@ class _LoadingScreenState extends State<LoadingScreen>
                     SizedBox(
                       width: 300,
                       height: 10,
-                      child: Stack(
-                        children: [
-                          // Background
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(5),
-                            child: Container(
-                              color: Colors.white.withOpacity(0.15),
-                            ),
-                          ),
-                          // Glowing effect
-                          AnimatedBuilder(
-                            animation: _glowAnimation,
-                            builder: (context, child) {
-                              return Container(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(5),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.lightBlue.withOpacity(
-                                          0.7 * _glowAnimation.value),
-                                      blurRadius: 15 * _glowAnimation.value,
-                                      spreadRadius: 3 * _glowAnimation.value,
-                                    ),
-                                    BoxShadow(
-                                      color: Colors.lightBlue.withOpacity(
-                                          0.5 * _glowAnimation.value),
-                                      blurRadius: 25 * _glowAnimation.value,
-                                      spreadRadius: 5 * _glowAnimation.value,
-                                    ),
-                                  ],
+                      child: AnimatedBuilder(
+                        animation: _controller,
+                        builder: (context, child) {
+                          return Stack(
+                            children: [
+                              // Background
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(5),
+                                child: Container(
+                                  color: Colors.white.withOpacity(0.2),
                                 ),
-                              );
-                            },
-                          ),
-                          // Progress bar
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(5),
-                            child: AnimatedBuilder(
-                              animation: _progressAnimation,
-                              builder: (context, child) {
-                                return Container(
-                                  width: 300 * _progressAnimation.value,
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        Colors.lightBlue.withOpacity(0.8),
-                                        Colors.lightBlue.withOpacity(1.0),
+                              ),
+                              // Progress
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(5),
+                                child: FractionallySizedBox(
+                                  widthFactor: _progressAnimation.value,
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        colors: [
+                                          Colors.amber.withOpacity(
+                                              _glowAnimation.value),
+                                          Colors.orangeAccent,
+                                        ],
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.amber.withOpacity(
+                                              0.5 * _glowAnimation.value),
+                                          blurRadius: 10,
+                                          spreadRadius: 2,
+                                        ),
                                       ],
                                     ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color:
-                                        Colors.lightBlue.withOpacity(0.6),
-                                        blurRadius: 12,
-                                        spreadRadius: 2,
-                                      ),
-                                      BoxShadow(
-                                        color:
-                                        Colors.lightBlue.withOpacity(0.4),
-                                        blurRadius: 20,
-                                        spreadRadius: 4,
-                                      ),
-                                    ],
                                   ),
-                                );
-                              },
-                            ),
-                          ),
-                        ],
+                                ),
+                              ),
+                            ],
+                          );
+                        },
                       ),
                     ),
                   ],
@@ -275,58 +191,4 @@ class _LoadingScreenState extends State<LoadingScreen>
       ),
     );
   }
-}
-
-class Particle {
-  double x;
-  double y;
-  final double size;
-  final double speedX;
-  final double speedY;
-  final double opacity;
-
-  Particle({
-    required this.x,
-    required this.y,
-    required this.size,
-    required this.speedX,
-    required this.speedY,
-    required this.opacity,
-  });
-
-  void update() {
-    x += speedX;
-    y += speedY;
-
-    // Bounce off edges
-    if (x < 0 || x > 1000) {
-      x = x < 0 ? 0 : 1000;
-    }
-    if (y < 0 || y > 1000) {
-      y = y < 0 ? 0 : 1000;
-    }
-  }
-}
-
-class ParticlePainter extends CustomPainter { 
-  final List<Particle> particles;
-
-  ParticlePainter({required this.particles});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()..style = PaintingStyle.fill;
-
-    for (var particle in particles) {
-      paint.color = Colors.white.withOpacity(particle.opacity);
-      canvas.drawCircle(
-        Offset(particle.x, particle.y),
-        particle.size,
-        paint,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(ParticlePainter oldDelegate) => true;
 }
